@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MyView1</string>
+    <string name="MyCustomViewTag">com.example.pangyinglei.myview1.MyCustomView</string>
+    <string name="phone_memory">手机存储</string>
+    <string name="scan">智能扫描到0个文件</string>
+    <string name="filepathback">返回上一级</string>
+</resources>

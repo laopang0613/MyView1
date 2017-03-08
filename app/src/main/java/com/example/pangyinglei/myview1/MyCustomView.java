@@ -1,0 +1,711 @@
+package com.example.pangyinglei.myview1;
+
+import android.animation.AnimatorInflater;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.TypedArray;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GestureDetectorCompat;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
+import android.widget.Button;
+import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
+/**
+ * Created by pangyinglei on 2016/12/30.
+ */
+
+public class MyCustomView extends View {
+
+    private static final String TAG = "myview1.MyCustomView";
+    private Paint mPaint;
+    private String mText;
+    private int mTextColor;
+    private float mTextSize;
+    //private Rect mRound;
+    private float lineWidth = 960f;
+    private float lineHeight = 55f;
+    private float txtTopXStart = 60f;
+    private float txtTopYStart = 150f;
+    //private int lineNumInPage = 26;
+    private float txtSize = 55f;
+
+    private float lineSpace = 27f;
+    private float paraSpace = 55f;
+    private float firstPageYStart = 500f;
+    private float titleSize = 80f;
+    private float titleHeight = 80f;
+    //private float titleX = 40f;
+    private float titleY = 200f;
+    private float littleTitleY = 40f;
+    private float littleTitleSize = 40f;
+
+    //private int pageBeginIndx = 0;
+    private int pageEndIndx = 0;
+    private float pageIndxSize = 30f;
+
+    private PopupWindow mPopupWindow;
+
+    private GestureDetectorCompat gestureDetectorCompat;
+
+    public MyCustomView(Context context) {
+        this(context,null);
+    }
+
+    public MyCustomView(Context context, AttributeSet attrs) {
+        this(context,attrs,0);
+    }
+
+    public MyCustomView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        TypedArray ta = context.getTheme().obtainStyledAttributes(attrs,R.styleable.MyCustomView,defStyleAttr,0);
+        int n = ta.getIndexCount();
+        Log.d(TAG,"n = "+n);
+        for(int i = 0;i<n;i++){
+            int attr = ta.getIndex(i);
+            switch(attr){
+                case  R.styleable.MyCustomView_MyText:
+                    mText = ta.getString(attr);
+                   //Log.d(TAG,"mText = "+mText);
+                   break;
+                case R.styleable.MyCustomView_MyTextColor:
+                    mTextColor = ta.getColor(attr,Color.BLACK);
+                    break;
+                case R.styleable.MyCustomView_MyTextSize:
+                    mTextSize = ta.getDimension(R.styleable.MyCustomView_MyTextSize,55);
+                    Log.d(TAG,"mTextSize = "+ mTextSize);
+                    break;
+            }
+        }
+        ta.recycle();
+        init();
+    }
+
+    private void init(){
+        mPaint = new Paint();
+        mPaint.setTextSize(mTextSize);
+        //mRound = new Rect(0,0,1000,1800);
+        float tmpSize = mPaint.getTextSize();
+        Log.d(TAG,"tmpSize = "+tmpSize);
+
+        //Paint.FontMetrics fm = mPaint.getFontMetrics();
+        //Log.d(TAG,"mText.length = "+mText.length());
+        gestureDetectorCompat = new GestureDetectorCompat(BookshelfApp.getBookshelfApp(),new MyGestureDetector());
+    }
+
+    public String getmText() {
+        return mText;
+    }
+
+    public void setmText(String mText) {
+        this.mText = mText;
+        this.postInvalidate();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        Log.d(TAG,"onDraw");
+        super.onDraw(canvas);
+        int c = mPaint.getColor();
+        //mPaint.setColor(Color.WHITE);
+        //canvas.drawRect(mRound,mPaint);
+        mPaint.setColor(mTextColor);
+//        canvas.drawText(mText,30f,30f,mPaint);
+//        canvas.drawText(mText,0,mText.length(),TXTTOP_XSTART,TXTTOP_YSTART,mPaint);
+        //Log.d(TAG,"mText = "+mText);
+        if(mText.length() <= 0){
+            return;
+        }
+
+        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        if(chapter.getCurrPageNumIndx() == 0){
+            //Log.d(TAG,"chapterPageIndx = "+ chapter.getCurrPageNumIndx()+" chaptertitle = "+chapter.getName());
+            drawBigChapterTitle(chapter.getName(),canvas);
+        }
+        else{
+            drawLittleChapterTitle(chapter.getName(),canvas);
+        }
+        //Log.d(TAG,"mText ="+mText);
+        mPaint.setTextSize(txtSize);
+        pageEndIndx = this.justifyedText(mText,canvas);
+        //不能在这里计算下次要显示的文本，否则多次重绘会自动翻页。
+        //mText = mText.substring(pageEndIndx,mText.length());
+        Log.d(TAG,"pageEndIndx = "+pageEndIndx);
+        //mb.getCurrChapter().getPageNumList()
+        drawPageIndx(chapter,canvas);
+    }
+
+    private void drawPageIndx(Chapter chapter,Canvas canvas){
+        mPaint.setTextSize(pageIndxSize);
+        int currPageIndx = chapter.getCurrPageNumIndx()+1;
+        int totalPageNum = chapter.getPageTotal();
+        float pageIndxY = MyFileUtils.getDisplayMetrics().heightPixels - pageIndxSize;
+        canvas.drawText(currPageIndx+"/"+totalPageNum,this.txtTopXStart,pageIndxY,mPaint);
+    }
+
+    private void drawLittleChapterTitle(String name,Canvas canvas){
+        mPaint.setTextSize(littleTitleSize);
+        int len = name.length();
+        if(len <= 0){
+            Log.e(TAG,"littletitle.len == 0");
+            return;
+        }
+        float[] tmpOneWidth = new float[len];
+        float tmpTotalWidth = 0;
+        int lineBeginIndx = 0;
+        int lineEndIndx = 0;
+        int lineNum = 0;
+        StringBuffer lineStr = new StringBuffer("");
+        for(int i =0;i<name.length();i++){
+            tmpOneWidth[i] = mPaint.measureText(name,i,i+1);
+            tmpTotalWidth += tmpOneWidth[i];
+            if(tmpTotalWidth > lineWidth){
+                lineEndIndx = i;
+                //计算实际显示的行宽（要减去超过的字符宽度）
+                tmpTotalWidth -= tmpOneWidth[i];
+                //Log.d(TAG,"960 tmptotalwidth = "+tmpTotalWidth);
+                //获取当前行实际要显示的字符串
+                lineStr.setLength(0);
+                lineStr.append(name.substring(lineBeginIndx,lineEndIndx));
+                float averageWidth = (lineWidth - tmpTotalWidth)/(lineEndIndx - lineBeginIndx);
+                //Log.d(TAG,"avewidth = "+averageWidth);
+                //下一行要显示的起始字符索引。
+                int j = lineBeginIndx;
+
+                float sumWidth = 0;
+                //由于不满一行字款，需要把每个字符加上字间距一个个画出来，
+                StringBuffer ones = new StringBuffer("");
+                while(j < lineEndIndx){
+                    //获取当前行每个字符的字串形式。
+                    //String ones = String.valueOf(pageStr.charAt(j));
+                    //Log.d(TAG,"ones = "+ones+" sumWidth = "+sumWidth);
+                    //画每个字符。
+                    //Log.d(TAG,"titlechar ="+name.charAt(j));
+                    canvas.drawText(String.valueOf(name.charAt(j)),
+                            txtTopXStart +sumWidth,
+                            littleTitleY,
+                            mPaint);
+                    //计算每个字符在x轴上的偏移量。
+                    sumWidth += tmpOneWidth[j]+averageWidth;
+                    j++;
+                }
+                break;
+            }
+            else{
+                if(i == len - 1) {
+                    //获取总字串的最后一行字符串。
+                    lineStr.setLength(0);
+                    lineStr.append(name.substring(lineBeginIndx, len));
+                    canvas.drawText(lineStr.toString(), txtTopXStart, littleTitleY, mPaint);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void drawBigChapterTitle(String name,Canvas canvas){
+        int len = name.length();
+        if(len <= 0){
+            return;
+        }
+        mPaint.setTextSize(this.titleSize);
+        float[] tmpOneWidth = new float[len];
+        float tmpTotalWidth = 0;
+        int lineBeginIndx = 0;
+        int lineEndIndx = 0;
+        int lineNum = 0;
+        StringBuffer lineStr = new StringBuffer("");
+        for(int i =0;i<name.length();i++){
+            tmpOneWidth[i] = mPaint.measureText(name,i,i+1);
+            tmpTotalWidth += tmpOneWidth[i];
+            if(tmpTotalWidth > lineWidth){
+                lineEndIndx = i;
+                //计算实际显示的行宽（要减去超过的字符宽度）
+                tmpTotalWidth -= tmpOneWidth[i];
+                //Log.d(TAG,"960 tmptotalwidth = "+tmpTotalWidth);
+                //获取当前行实际要显示的字符串
+                lineStr.setLength(0);
+                lineStr.append(name.substring(lineBeginIndx,lineEndIndx));
+                float averageWidth = (lineWidth - tmpTotalWidth)/(lineEndIndx - lineBeginIndx);
+                //Log.d(TAG,"avewidth = "+averageWidth);
+                //下一行要显示的起始字符索引。
+                int j = lineBeginIndx;
+
+                float sumWidth = 0;
+                //由于不满一行字款，需要把每个字符加上字间距一个个画出来，
+                StringBuffer ones = new StringBuffer("");
+                while(j < lineEndIndx){
+                    //获取当前行每个字符的字串形式。
+                    //String ones = String.valueOf(pageStr.charAt(j));
+                    //Log.d(TAG,"ones = "+ones+" sumWidth = "+sumWidth);
+                    //画每个字符。
+                    //Log.d(TAG,"titlechar ="+name.charAt(j));
+                    canvas.drawText(String.valueOf(name.charAt(j)),
+                            txtTopXStart +sumWidth,
+                            this.titleY+lineNum*titleHeight,
+                            mPaint);
+                    //计算每个字符在x轴上的偏移量。
+                    sumWidth += tmpOneWidth[j]+averageWidth;
+                    j++;
+                }
+                //Log.d(TAG,"linenum ="+lineNum);
+                lineNum++;
+                tmpTotalWidth = tmpOneWidth[i];
+                //下一行字符串的起始字符索引。
+                lineBeginIndx = i;
+                //i恰好等于最后一个字符，需要再循环一次。
+                if(i == len - 1){
+                    i = len - 2;
+                }
+            }
+            else{
+                if(i == len - 1) {
+                    //获取总字串的最后一行字符串。
+                    lineStr.setLength(0);
+                    lineStr.append(name.substring(lineBeginIndx, len));
+                    canvas.drawText(lineStr.toString(), txtTopXStart, titleY + lineNum * titleHeight, mPaint);
+                    canvas.drawLine(txtTopXStart,firstPageYStart-5,txtTopXStart+lineWidth,firstPageYStart - 5,mPaint);
+                    lineNum++;
+                }
+            }
+
+
+            //标题栏超过3行就不画了，以省略号结尾。
+            if(lineNum > 3){
+                return;
+            }
+        }
+    }
+
+    //画每一页的文本字串显示，并返回下一页的起始字串索引。
+    private int justifyedText(String pageStr,Canvas canvas){
+        //Log.d(TAG,"pageStr = "+pageStr);
+        float lastLineHeight;
+        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        if(chapter.getCurrPageNumIndx() == 0){
+            lastLineHeight = firstPageYStart;
+        }
+        else{
+            lastLineHeight = txtTopYStart;
+        }
+        int pageEndCharIndx = 0;
+        int lenth = pageStr.length();
+        float[] tmpOneWidth = new float[lenth];
+        float tmpTotalWidth = 0;
+        int lineBeginIndx = 0;
+        int lineEndIndx = 0;
+        //int lineNum = 0;
+        //String lineStr = "";
+        StringBuffer lineStr = new StringBuffer("");
+        //StringBuffer everyWord = new StringBuffer("");
+        for(int i = 0; i< lenth;i++){
+            //测量单个字符到字宽。
+            tmpOneWidth[i] = mPaint.measureText(pageStr,i,i+1);
+//            Log.d(TAG,"oneWidth ="+ tmpOneWidth[i]);
+            //字符宽度累加
+            tmpTotalWidth += tmpOneWidth[i];
+            //如果累加到字符宽度大于行宽。
+            if(tmpTotalWidth> lineWidth){
+                //Log.d(TAG,"tmptotalwidth = "+tmpTotalWidth);
+                //获取超过当前行宽的字符的索引。
+                lineEndIndx = i;
+                //计算实际显示的行宽（要减去超过的字符宽度）
+                tmpTotalWidth -= tmpOneWidth[i];
+                //Log.d(TAG,"960 tmptotalwidth = "+tmpTotalWidth);
+                //获取当前行实际要显示的字符串
+                lineStr.setLength(0);
+                lineStr.append(pageStr.substring(lineBeginIndx,lineEndIndx));
+                //Log.d(TAG,"s = "+lineStr.toString()+ " linebeginindx = "+lineBeginIndx+ " lineendindx = "+ lineEndIndx);
+                //canvas.drawText(lineStr.toString(),TXTTOP_XSTART,TXTTOP_YSTART+lineNum*LINEHEIGHT,mPaint);
+                //如果当前行字串宽度不占满行宽，计算当前行每个字符需要均分的宽度，即字间距。
+                float averageWidth = (lineWidth - tmpTotalWidth)/(lineEndIndx - lineBeginIndx);
+                //Log.d(TAG,"avewidth = "+averageWidth);
+                //下一行要显示的起始字符索引。
+                int j = lineBeginIndx;
+
+                float sumWidth = 0;
+                //由于不满一行字款，需要把每个字符加上字间距一个个画出来，
+                StringBuffer ones = new StringBuffer("");
+                //Log.d(TAG,"lastLineH ="+lastLineHeight+"linestr ="+lineStr.toString());
+                lastLineHeight = lastLineHeight + lineHeight;
+                while(j < lineEndIndx){
+                    //获取当前行每个字符的字串形式。
+                    //String ones = String.valueOf(pageStr.charAt(j));
+                   // Log.d(TAG,"ones = "+ones+" sumWidth = "+sumWidth);
+                    //画每个字符。
+                    canvas.drawText(String.valueOf(pageStr.charAt(j)),
+                            txtTopXStart +sumWidth,
+                            lastLineHeight,
+                            mPaint);
+                    //计算每个字符在x轴上的偏移量。
+
+                    sumWidth += tmpOneWidth[j]+averageWidth;
+                    j++;
+
+                }
+                lastLineHeight = lastLineHeight + lineSpace;
+                //lineNum++;
+                //由于下一行最后一个字符的字宽被舍去，重置当前累加行宽为下一行第一个字符的字宽。
+                tmpTotalWidth = tmpOneWidth[i];
+                //下一行字符串的起始字符索引。
+                lineBeginIndx = i;
+                //i恰好等于最后一个字符，需要再循环一次。
+                if(i == lenth - 1){
+                    i = lenth - 2;
+                }
+            }
+            else {
+                if (i != lenth - 1 && pageStr.charAt(i) == '\n' && lineBeginIndx != i) {
+                    //如果该行中有换行符，同时换行符不能为行首字符，获取当前行的字串。
+                    //如果为行首字符，按照空格字宽计算。
+                    lineStr.setLength(0);
+                    lineStr.append(pageStr.substring(lineBeginIndx, i));
+                    //lastLineHeight = lastLineHeight+lineHeight;
+                    //Log.d(TAG,"lastLineH ="+lastLineHeight+"linestr ="+lineStr.toString());
+                    lastLineHeight = lastLineHeight+lineHeight;
+                    canvas.drawText(lineStr.toString(), txtTopXStart, lastLineHeight, mPaint);
+                    lastLineHeight = lastLineHeight+paraSpace;
+
+                    //Log.d(TAG,"linestr = "+lineStr.toString()+" linebeginindx = "+lineBeginIndx+" i = "+i);
+                    lineBeginIndx = i;
+                    //重置累加字符宽度。
+                    tmpTotalWidth = tmpOneWidth[i];
+                    //lineNum++;
+                }else if(i == lenth - 1) {
+                    //获取总字串的最后一行字符串。
+                    lineStr.setLength(0);
+                    lineStr.append(pageStr.substring(lineBeginIndx, lenth));
+                    //Log.d(TAG,"lastLineH ="+lastLineHeight+"linestr ="+lineStr.toString());
+                    lastLineHeight = lastLineHeight + lineHeight;
+                    canvas.drawText(lineStr.toString(), txtTopXStart, lastLineHeight, mPaint);
+                    //lastLineHeight = lastLineHeight + lineSpace;
+                    //lineNum++;
+                }
+            }
+            //记录下一页的起始字符索引。
+//            if(lineNum >= lineNumInPage){
+//                //Log.d(TAG,"pageendstr = "+pageStr.charAt(i)+" linebeginindx = "+i);
+//                pageEndCharIndx = i;
+//                break;
+//            }
+//            int maxHeight = MyFileUtils.getDisplayMetrics().heightPixels;
+//            Log.d(TAG,"maxHeight ="+maxHeight);
+//            if(lastLineHeight > maxHeight - lineHeight){
+//                pageEndCharIndx = i;
+//                break;
+//            }
+
+        }
+        return pageEndCharIndx;
+    }
+
+    public class MyGestureDetector extends GestureDetector.SimpleOnGestureListener{
+        float xDown = 0,yDown = 0,xFling = 0,yFling = 0;
+        @Override
+        public boolean onDown(MotionEvent e) {
+            //Log.d(TAG,"ondown "+e.toString());
+            xDown = e.getX();
+            yDown = e.getY();
+            Log.d(TAG,"xdown ="+xDown+" ydown ="+yDown);
+            return true;
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            //Log.d(TAG,"onfling"+e1.toString()+e2.toString()+"velocityx ="+velocityX+"velocityy="+velocityY);
+            xFling = e2.getX();
+            yFling = e2.getY();
+            //Log.d(TAG,"xfling ="+xFling+" yFling ="+yFling);
+            int slop = ViewConfiguration.get(BookshelfApp.getBookshelfApp()).getScaledTouchSlop();
+            //Log.d(TAG,"touchslop = "+slop);
+            if(xFling - xDown > 0 && Math.abs(xFling - xDown) > slop){
+                Log.d(TAG,"turnPrevPage");
+                turnPrevPage();
+            }
+            else if(xFling - xDown < 0 && Math.abs(xFling - xDown) > slop){
+                Log.d(TAG,"turnNextPage");
+                turnNextPage();
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            //Log.d(TAG,"onscroll"+e1.toString()+e2.toString()+"distancex ="+distanceX+"distancey ="+distanceY);
+            return true;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent e) {
+            Log.d(TAG,"onshowpress"+e.toString());
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            Log.d(TAG,"onSingleTapUp "+ e.toString());
+            popWindowHandler(e);
+            return true;
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return gestureDetectorCompat.onTouchEvent(event);
+//        return super.onTouchEvent(event);
+    }
+
+    //    @Override
+//   public boolean onTouchEvent(MotionEvent event) {
+//        float xUp = 0,yUp = 0,xDown = 0,yDown = 0,xMove = 0,yMove = 0;
+//       int action = event.getAction();
+//       switch(action){
+//            case MotionEvent.ACTION_UP:
+//                xUp = event.getX();
+//                yUp = event.getY();
+//                Log.d(TAG,"action_up xUp = "+xUp + "yUp ="+yUp);
+//                if(Math.abs(xUp-xDown) > 16 && xUp - xDown > 0){
+//                    turnNextPage();
+//                }
+//                else if(Math.abs(xUp-xDown) > 16 && xUp - xDown < 0){
+//                    turnPrevPage();
+//                }
+//                else{
+//                    popWindowHandler(event);
+//                }
+//                break;
+//            case MotionEvent.ACTION_DOWN:
+//                xDown = event.getX();
+//                yDown = event.getY();
+//                Log.d(TAG,"action_down xdown = "+xDown+" ydown ="+yDown);
+//                //turnNextPage();
+//                //turnPrevPage();
+//                //popWindowHandler(event);
+//                break;
+//            case MotionEvent.ACTION_MOVE:
+//                Log.d(TAG,"action move xMove ="+xMove+" yMove ="+yMove);
+//                break;
+//        }
+//        return false;
+//    }
+
+
+    //翻页
+    private void turnNextPage(){
+        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        Log.d(TAG,"pageTotal = "+chapter.getPageTotal());
+        int pageNumIndx = chapter.getCurrPageNumIndx();
+        Log.d(TAG,"pageNumIndx = "+pageNumIndx);
+        pageNumIndx++;
+        if(pageNumIndx > chapter.getPageTotal() - 1){
+            gotoNextChapter();
+        }
+        else {
+            //重绘制view.
+           // mText = mText.substring(this.pageEndIndx, mText.length());
+            mText = chapter.getContent().substring(chapter.getPageNumList().get(pageNumIndx - 1 ),chapter.getPageNumList().get(pageNumIndx));
+            this.postInvalidate();
+            chapter.setCurrPageNumIndx(pageNumIndx);
+            //BookDBHelper.writePageIndxToDB(pageNumIndx);
+        }
+
+    }
+
+    private void turnPrevPage(){
+        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        Log.d(TAG,"pageTotal = "+chapter.getPageTotal());
+        int pageNumIndx = chapter.getCurrPageNumIndx();
+        Log.d(TAG,"pageNumIndx = "+pageNumIndx);
+        pageNumIndx--;
+        //Log.d(TAG,"pageNumIndx"+pageNumIndx);
+        if(pageNumIndx < 0){
+            gotoPrevChapter();
+        }
+        else {
+            //重绘制view.
+            // mText = mText.substring(this.pageEndIndx, mText.length());
+            if(pageNumIndx == 0){
+                mText = chapter.getContent().substring(0, chapter.getPageNumList().get(pageNumIndx));
+            }
+            else {
+                mText = chapter.getContent().substring(chapter.getPageNumList().get(pageNumIndx - 1), chapter.getPageNumList().get(pageNumIndx));
+            }
+            this.postInvalidate();
+            Log.d(TAG,"pageNumIndx"+pageNumIndx);
+            chapter.setCurrPageNumIndx(pageNumIndx);
+            //BookDBHelper.writePageIndxToDB(pageNumIndx);
+        }
+    }
+
+    private void gotoNextChapter(){
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        int currChapterIndx = mb.getCurrChapterIndx();
+        currChapterIndx++;
+        if(currChapterIndx > mb.getChapterList().size()-1){
+            Log.d(TAG,"end of file");
+            return;
+        }
+        else{
+            Log.d(TAG,"gonextchapter");
+            //每跳转下一章就把上一章的内容清空。
+            mb.getChapterList().get(currChapterIndx - 1).setContent("");
+            mb.setCurrChapterIndx(currChapterIndx);
+            //BookDBHelper.writeChapterIndxToDB(currChapterIndx);
+            ShowChapterTask sct = new ShowChapterTask(this,true,false);
+            sct.execute();
+        }
+    }
+
+    //翻前一章要显示前一章的最后一页，继续改进。
+    private void gotoPrevChapter(){
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        int currChapterIndx = mb.getCurrChapterIndx();
+        currChapterIndx--;
+        if(currChapterIndx < 0){
+            Log.d(TAG,"begin of file");
+            return;
+        }
+        else{
+            Log.d(TAG,"goPrevChapter");
+            mb.getChapterList().get(currChapterIndx + 1).setContent("");
+            mb.setCurrChapterIndx(currChapterIndx);
+            //BookDBHelper.writeChapterIndxToDB(currChapterIndx);
+            ShowChapterTask sct = new ShowChapterTask(this,true,true);
+            sct.execute();
+        }
+    }
+
+    private void popWindowHandler(MotionEvent event){
+        int screenH = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+        Log.d(TAG,"screenH = "+screenH);
+        //int imgH = ContextCompat.getDrawable(BookshelfApp.getBookshelfApp(),R.mipmap.setmenbg).getIntrinsicHeight();
+        //int popWindowH = mPopupWindow.getHeight();
+        LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
+        View contentView = inflater.inflate(R.layout.setting_popwindow,null);
+        int popWindowH  = contentView.getHeight();
+        Log.d(TAG,"popWindowH = "+popWindowH);
+        if(mPopupWindow!=null&&mPopupWindow.isShowing()){
+            //点击坐标不在弹窗范围内, y坐标小于(屏高 - 弹窗背景高度),隐藏弹窗。
+            if(event.getY() < screenH - popWindowH){
+                mPopupWindow.dismiss();
+                mPopupWindow = null;
+            }
+        }
+        else{
+            showPopWindow();
+        }
+    }
+
+    private void showPopWindow(){
+        LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
+        View contentView = inflater.inflate(R.layout.setting_popwindow,null);
+//        RelativeLayout relativeLayout = (RelativeLayout)contentView.findViewById(R.id.setting_layout);
+//        Animation animation = AnimationUtils.loadAnimation(this.getContext(),R.anim.pop_bottomtotop);
+//        LayoutAnimationController lac = new LayoutAnimationController(animation);
+//        relativeLayout.setLayoutAnimation(lac);
+        TextView bottom_line_tv = (TextView)inflater.inflate(R.layout.chapter_content,null).findViewById(R.id.bottom_line);
+        mPopupWindow = new PopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT,true);
+        //mPopupWindow.setAnimationStyle(R.style.SetPopWindow);
+        //mPopupWindow.setBackgroundDrawable(ContextCompat.getDrawable(BookshelfApp.getBookshelfApp(),R.mipmap.setmenbg));
+        mPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.LTGRAY));
+        mPopupWindow.showAtLocation(this, Gravity.BOTTOM,0,0);
+        Button btn1 = (Button)contentView.findViewById(R.id.btn_chapterList);
+        Button btn2 = (Button)contentView.findViewById(R.id.btn_light);
+        Button btn3 = (Button)contentView.findViewById(R.id.btn_setting);
+        btn1.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                gotoChapterList(v);
+            }
+        });
+        btn2.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                gotoChangeLight(v);
+            }
+        });
+        btn3.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                gotoSetting(v);
+            }
+        });
+    }
+
+    //跳转到目录界面。
+    private void gotoChapterList(View v){
+        Intent intent = new Intent();
+        //intent.setClass(this.getContext(),ChapterListActivity.class);
+        intent.setClass(this.getContext(),ChapterlistAndBookmark.class);
+        this.getContext().startActivity(intent);
+        dismissPopWindow();
+    }
+
+    private void gotoChangeLight(View v){
+        addBookmark();
+    }
+
+    private void gotoSetting(View v){
+
+    }
+
+    private void dismissPopWindow(){
+        if(mPopupWindow!=null&&mPopupWindow.isShowing()){
+            mPopupWindow.dismiss();
+            mPopupWindow = null;
+        }
+    }
+
+    private void addBookmark(){
+        Log.d(TAG,"addBookmark");
+        BookMark bookMark = new BookMark();
+        Log.d(TAG,"mText = "+mText);
+        bookMark.setContent(mText);
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        bookMark.setChapterIndx(mb.getCurrChapterIndx());
+        Chapter chapter = mb.getCurrChapter();
+        int pageNumIndx = chapter.getCurrPageNumIndx();
+        bookMark.setPageNumIndx(pageNumIndx);
+        int charBeginIndx = chapter.getBeginCharIndex()+ chapter.getPageNumList().get(pageNumIndx);
+        //String percent = new DecimalFormat(".00%").format(charBeginIndx/mb.getCharTotalCount());
+        Log.d(TAG,"charTotalCount="+mb.getCharTotalCount());
+        //String percent = (float)(Math.round((charBeginIndx/mb.getCharTotalCount())*100))/100+"%";
+        double percentNum = (double)charBeginIndx/mb.getCharTotalCount();
+        float fp = new BigDecimal(percentNum).setScale(4,4).floatValue();
+        String percent = fp*100+"%";
+        Log.d(TAG,"pageNumIndx="+pageNumIndx+" charBeginIndx="+charBeginIndx+" percent="+percent);
+        bookMark.setPercent(percent);
+        //获取24小时制系统时间，大写HH表示24小时制，小写hh表示12小时制。
+        String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(System.currentTimeMillis());
+        bookMark.setTime(time);
+        Log.d(TAG,"time="+time);
+        mb.getBookMarkList().add(bookMark);
+        mb.setCurrBookMarkIndx(mb.getBookMarkList().size() - 1);
+        BookMark bookMarktwo = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrBookMark();
+        Log.d(TAG,"time="+bookMarktwo.getTime()+" percent="+bookMarktwo.getPercent());
+
+    }
+}

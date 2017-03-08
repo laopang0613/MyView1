@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_add_new_book"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.example.pangyinglei.myview1.AddNewBookActivity">
+
+    <RelativeLayout
+        android:id="@+id/addnewbook_lyone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/addnewbook_lineupone"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:background="@color/colorPrimaryDark"
+            android:layout_marginBottom="5dp"/>
+        <ImageView
+            android:id="@+id/addnewbook_iv"
+            android:layout_width="wrap_content"
+            android:layout_height="72dp"
+            android:layout_centerVertical="true"
+            android:layout_below="@id/addnewbook_lineupone"
+            android:src="@mipmap/filefoldericon"
+            />
+        <TextView
+            android:id="@+id/addnewbook_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/addnewbook_iv"
+            android:layout_marginStart="5dp"
+            android:layout_centerVertical="true"
+            android:text="@string/phone_memory"
+            android:textSize="20sp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_below="@id/addnewbook_iv"
+            android:background="@color/colorPrimaryDark"
+            android:layout_marginTop="5dp"/>
+    </RelativeLayout>
+    <TextView
+        android:id="@+id/addnewbook_scan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/scan"
+        android:background="?attr/colorControlHighlight"
+        android:layout_below="@id/addnewbook_lyone"
+        android:textSize="15sp"/>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_below="@id/addnewbook_scan"
+        android:background="@color/colorPrimaryDark"
+        android:layout_marginBottom="1dp"
+        android:layout_marginTop="1dp"
+        />
+
+
+
+</RelativeLayout>
