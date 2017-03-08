@@ -261,7 +261,8 @@ public class MyFileUtils {
         //mContext.deleteFile("sishen.txt");
 
         //deleteAllBooksFile();
-        cutFile(fileNamePrefix);
+        //去掉分割文件，分割文件会多占用户一倍存储空间。
+        //cutFile(fileNamePrefix);
         Log.d(TAG,"cut done");
         //获取当前章节内容。
         String currChapterContent = getChapterContent(mb.getCurrChapterIndx(),mb);
@@ -289,6 +290,7 @@ public class MyFileUtils {
         }
         //getStr("sishen");
     }
+
 
     private static void cutFile(String fileNamePrefix){
         BookshelfApp bookshelfApp = BookshelfApp.getBookshelfApp();
@@ -461,37 +463,37 @@ public class MyFileUtils {
         }
     }
 
-    //获取当前章节都内容。
     public static String getChapterContent(int chapterIndx, MyBook mb){
         //获取章节属于小文件的文件索引，即第几个文件。
         //Log.d(TAG,"chapterIndx = "+chapterIndx);
-        int fileIndx = chapterIndx/MyFileUtils.SFILECHAPTERCOUNT;
+        //int fileIndx = chapterIndx/MyFileUtils.SFILECHAPTERCOUNT;
         //获取文件名前缀。
-        String fileNamePrefix = mb.getName().substring(0,mb.getName().length() - 4);
+        //String fileNamePrefix = mb.getName().substring(0,mb.getName().length() - 4);
         //获取章节所属小文件的文件名。
-        String smallFileName = fileNamePrefix+fileIndx+MyFileUtils.FILESUFFIX;
+        //String smallFileName = fileNamePrefix+fileIndx+MyFileUtils.FILESUFFIX;
         //Log.d(TAG,"smallFileName = "+smallFileName);
         //获取小文件的起始第一章在原文件中的标题起始位置。
-        int smallFileBeginIndx;
-        if(fileIndx == 0){
-            smallFileBeginIndx = 0;
-        }
-        else {
-            smallFileBeginIndx = mb.getChapterList().get(fileIndx * MyFileUtils.SFILECHAPTERCOUNT).getBeginCharIndex();
-        }
+//        int smallFileBeginIndx;
+//        if(fileIndx == 0){
+//            smallFileBeginIndx = 0;
+//        }
+//        else {
+//            smallFileBeginIndx = mb.getChapterList().get(fileIndx * MyFileUtils.SFILECHAPTERCOUNT).getBeginCharIndex();
+//        }
         //Log.d(TAG,"smallfilebeginindx ="+smallFileBeginIndx);
         //获取当前章节的内容在原文件的内容起始位置。
         //Log.d(TAG,"size = "+ mb.getChapterList().size());
         int currChapterBeginIndx = mb.getChapterList().get(chapterIndx).getBeginContentIndex();
-        //Log.d(TAG,"currchapterBeginIndx = "+currChapterBeginIndx);
+        Log.d(TAG,"currchapterBeginIndx = "+currChapterBeginIndx);
         //计算当前章节在小文件的的内容起始位置。
-        int skipCharNum = currChapterBeginIndx - smallFileBeginIndx;
-        //Log.d(TAG,"skipCharNum = "+skipCharNum);
+        //int skipCharNum = currChapterBeginIndx - smallFileBeginIndx;
+        int skipCharNum = currChapterBeginIndx;
+        Log.d(TAG,"skipCharNum = "+skipCharNum);
         int currChapterCharTotal = 0;
         //如果章节是原文最后一章，那么当前章节的字数应为 原文总字数减去当前章节在原文件中的内容起始位置。
         if(chapterIndx == mb.getChapterList().size()-1) {
             currChapterCharTotal = mb.getCharTotalCount() - currChapterBeginIndx;
-            //Log.d(TAG," up currchapterchartotal = "+currChapterCharTotal);
+            Log.d(TAG," up currchapterchartotal = "+currChapterCharTotal);
         }
         else{
             //否则，当前章节字数为下一章标题起始位置减去当前章节内容起始位置。
@@ -499,7 +501,7 @@ public class MyFileUtils {
             //Log.d(TAG,"curr chapterName ="+mb.getChapterList().get(chapterIndx).getName());
             //Log.d(TAG,"next chaptername ="+mb.getChapterList().get(chapterIndx+1).getName());
             //Log.d(TAG,"chapterindx="+chapterIndx+" next chaptercontent.len ="+mb.getChapterList().get(chapterIndx + 1).getBeginCharIndex());
-            //Log.d(TAG,"down currchapterchartotal = "+currChapterCharTotal);
+            Log.d(TAG,"down currchapterchartotal = "+currChapterCharTotal);
         }
 
         BufferedReader br = null;
@@ -508,7 +510,8 @@ public class MyFileUtils {
         try {
             //fis = BookshelfApp.getBookshelfApp().openFileInput(smallFileName);
             //分割后的文件写入storage/emulate/0/PPReader/books/
-            fis = new FileInputStream(new File(AppFoldUtils.getFoldPath("books")+"/"+smallFileName));
+            //fis = new FileInputStream(new File(AppFoldUtils.getFoldPath("books")+"/"+smallFileName));
+            fis = new FileInputStream(new File(BookshelfApp.getBookshelfApp().getCurrMyBook().getPath()));
             br = new BufferedReader(new InputStreamReader(fis,"gb2312"));
             br.skip(skipCharNum);
             int currCharCount = 0;
@@ -516,7 +519,7 @@ public class MyFileUtils {
             char[] buff = new char[1024*4];
             while((charCount = br.read(buff,0,buff.length))!=-1){
                 currCharCount += charCount;
-                //Log.d(TAG,"currCharcount = "+currCharCount);
+                Log.d(TAG,"currCharcount = "+currCharCount);
                 //如果当前读取字符总数小于当前章节总数，就存入stringbuff;
                 if(currCharCount <= currChapterCharTotal){
                     chapterContent.append(buff,0,charCount);
@@ -531,7 +534,7 @@ public class MyFileUtils {
                     break;
                 }
             }
-            //Log.d(TAG,"chapterContent ="+chapterContent.toString());
+            Log.d(TAG,"chapterContent ="+chapterContent.toString());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (UnsupportedEncodingException e) {
