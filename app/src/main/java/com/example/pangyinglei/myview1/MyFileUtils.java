@@ -139,8 +139,7 @@ public class MyFileUtils {
         return title.trim().replaceFirst("\\s*\u7b2c","\u7b2c");
     }
 
-    public static void getChapterNameAndIndx(String destStr,int mCharCount,int shareStrlen,StringBuffer prevStr,
-                                      int bookId, SQLiteDatabase db,ContentValues cv){
+    public static void getChapterNameAndIndx(String destStr,int mCharCount,int shareStrlen,StringBuffer prevStr){
        // Log.d(TAG,"prevstr = "+prevStr);
         matcher = pattern.matcher(destStr);
 
@@ -162,7 +161,6 @@ public class MyFileUtils {
                 int beginContentIndex = mCharCount+end0 - shareStrlen;
                 chapter.setBeginContentIndex(beginContentIndex);
                 chapter.setCurrPageNumIndx(0);
-                BookDBHelper.insertChapter(chapter,bookId,db,cv);
                 BookshelfApp.getBookshelfApp().getCurrMyBook().getChapterList().add(chapter);
                 //Log.d(TAG,"chaptename = "+chapter.getName());
                 //chapterIndxMap.put(str0,beginIndex);
@@ -194,12 +192,6 @@ public class MyFileUtils {
         StringBuffer prevStr = new StringBuffer("");
         BookshelfApp bookshelfApp = BookshelfApp.getBookshelfApp();
 
-        BookDBHelper bookDBHelper = new BookDBHelper(bookshelfApp);
-        SQLiteDatabase readDB = bookDBHelper.getReadableDatabase();
-        int bookId = BookDBHelper.getCurrBookId(readDB);
-        SQLiteDatabase writeDB = bookDBHelper.getWritableDatabase();
-        ContentValues cv = new ContentValues();
-
         MyBook mb = bookshelfApp.getCurrMyBook();
         try {
             //Log.d(TAG,"name = "+mb.getChapterList());
@@ -227,8 +219,7 @@ public class MyFileUtils {
 
                 //把共用的字串添加到下次buff字串开头。避免后续匹配章节名时，章节名被读取的buff截断而导致丢失。
                 //String sumStr = shareStr + tmpStr;
-                getChapterNameAndIndx(sb.toString(),charCount,shareStr.length(),prevStr,
-                        bookId,writeDB,cv);
+                getChapterNameAndIndx(sb.toString(),charCount,shareStr.length(),prevStr);
                 //每读一次buff，都截取最后一部分字符。
                 shareStr.setLength(0);
                // shareStr = tmpStr.substring(length - SHARESTRLEN,length);
@@ -239,7 +230,6 @@ public class MyFileUtils {
                 charCount += length;
             }
             mb.setCharTotalCount(charCount);
-            BookDBHelper.updateCharTotalCount(charCount);
             //Log.d(TAG,"chartotalcount = "+charCount+"chaptercount = "+mb.getChapterList().size());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -252,9 +242,6 @@ public class MyFileUtils {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            readDB.close();
-            bookDBHelper.closeDB(writeDB);
         }
 
         String fileNamePrefix = mb.getName().substring(0,mb.getName().length() - 4);

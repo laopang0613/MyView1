@@ -1,23 +1,15 @@
 package com.example.pangyinglei.myview1;
 
+
 import android.content.Intent;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public class ChapterContentActivity extends AppCompatActivity {
@@ -111,6 +103,7 @@ public class ChapterContentActivity extends AppCompatActivity {
         MyAsyncTask mtask = new MyAsyncTask(mCustomView);
         mtask.execute();
     }
+
 
     @Override
     protected void onStop() {

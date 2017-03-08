@@ -131,19 +131,12 @@ public class BookDBHelper extends SQLiteOpenHelper {
         writeDB.close();
     }
 
-    public static void updateCharTotalCount(int charTotalCount){
-        BookDBHelper bookDBHelper = new BookDBHelper(BookshelfApp.getBookshelfApp());
-        SQLiteDatabase readDB = bookDBHelper.getReadableDatabase();
-        int bookId = getCurrBookId(readDB);
+    public static void insertCharTotalCount(int charTotalCount,ContentValues cv,int bookId,SQLiteDatabase db){
         String sBookId = String.valueOf(bookId);
         Log.d(TAG,"bookId="+bookId);
-        readDB.close();
-        SQLiteDatabase writeDB = bookDBHelper.getWritableDatabase();
-        ContentValues cv = new ContentValues();
         cv.clear();
         cv.put("charTotalCount",charTotalCount);
-        writeDB.update("bookTable",cv,"bookId=?",new String[]{sBookId});
-        writeDB.close();
+        db.update("bookTable",cv,"bookId=?",new String[]{sBookId});
     }
 
     public static int getChapterId(int chapterIndx,SQLiteDatabase db,int bookId){
