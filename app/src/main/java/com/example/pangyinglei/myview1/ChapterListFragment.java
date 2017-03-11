@@ -72,6 +72,10 @@ public class ChapterListFragment extends Fragment implements AdapterView.OnItemC
         //bundle.putParcelable("mybook",mb);
         //intent.putExtras(bundle);
         this.startActivity(intent);
+
+        //同时缓存前后章节。
+        CacheChapterContent cacheChapterContent = new CacheChapterContent(position);
+        cacheChapterContent.execute();
     }
 
     private class ListViewAdapter extends BaseAdapter {

@@ -4,9 +4,11 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by pangyinglei on 2017/1/10.
@@ -24,8 +26,12 @@ public class MyBook implements Parcelable {
     private List<BookMark> bookMarkList = new ArrayList<BookMark>();
     private int currBookMarkIndx;
 
-    //缓存的章节索引,默认容量为2
-    private List<Integer> cacheChapterNums = new ArrayList<Integer>(2);
+    //缓存最近的章节索引，默认容量为五章。
+    private Set<Integer> cacheChapterIndxs = Collections.synchronizedSet(new LinkedHashSet<Integer>(5));
+
+    //预加载前后一章。
+//    private int cachePreChapterIndx= -1;
+//    private int cacheNextChapterIndx = -1;
 
     public MyBook() {
         //initBook();
@@ -38,13 +44,8 @@ public class MyBook implements Parcelable {
         path = in.readString();
         in.readTypedList(chapterList,Chapter.CREATOR);
         //in.readTypedList(bookMarkList,);
-        in.readList(cacheChapterNums,List.class.getClassLoader());
     }
 
-    private void initBook(){
-        cacheChapterNums.add(0);
-        cacheChapterNums.add(1);
-    }
 
     public void setName(String name) {
         this.name = name;
@@ -128,12 +129,28 @@ public class MyBook implements Parcelable {
         }
     }
 
-    public List<Integer> getCacheChapterNums() {
-        return cacheChapterNums;
+//    public int getCacheNextChapterIndx() {
+//        return cacheNextChapterIndx;
+//    }
+//
+//    public void setCacheNextChapterIndx(int cacheNextChapterIndx) {
+//        this.cacheNextChapterIndx = cacheNextChapterIndx;
+//    }
+//
+//    public int getCachePreChapterIndx() {
+//        return cachePreChapterIndx;
+//    }
+//
+//    public void setCachePreChapterIndx(int cachePreChapterIndx) {
+//        this.cachePreChapterIndx = cachePreChapterIndx;
+//    }
+
+    public Set<Integer> getCacheChapterIndxs() {
+        return cacheChapterIndxs;
     }
 
-    public void setCacheChapterNums(List<Integer> cacheChapterNums) {
-        this.cacheChapterNums = cacheChapterNums;
+    public void setCacheChapterIndxs(Set<Integer> cacheChapterIndxs) {
+        this.cacheChapterIndxs = cacheChapterIndxs;
     }
 
     @Override
@@ -148,7 +165,6 @@ public class MyBook implements Parcelable {
         dest.writeInt(this.charTotalCount);
         dest.writeString(path);
         dest.writeTypedList(chapterList);
-        dest.writeList(cacheChapterNums);
     }
 
     public final static Parcelable.Creator<MyBook> CREATOR = new Parcelable.Creator<MyBook>(){

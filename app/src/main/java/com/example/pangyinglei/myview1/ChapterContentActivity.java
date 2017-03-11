@@ -66,20 +66,20 @@ public class ChapterContentActivity extends AppCompatActivity {
         }
         else {
 
-//            if(mb.getCurrChapter().isEmpty() == false) {
-//                Log.d(TAG, "chapter is not empty" + "currindx= " + mb.getCurrChapterIndx());
-//                Chapter chapter = mb.getCurrChapter();
-//                int pageIndx = chapter.getCurrPageNumIndx();
-//                Log.d(TAG,"pageIndx ="+pageIndx);
-//                List<Integer> pageNumList = chapter.getPageNumList();
-//                if(pageIndx == 0){
-//                    this.mCustomView.setmText(chapter.getContent().substring(0,pageNumList.get(0)));
-//                }
-//                else{
-//                    this.mCustomView.setmText(chapter.getContent().substring(pageNumList.get(pageIndx - 1),pageNumList.get(pageIndx)));
-//                }
-//                //this.mCustomView.setmText(mb.getCurrChapter().getContent());
-//            } else {
+            if(mb.getCurrChapter().isEmpty() == false) {
+                Log.d(TAG, "chapter is not empty" + "currindx= " + mb.getCurrChapterIndx());
+                Chapter chapter = mb.getCurrChapter();
+                int pageIndx = chapter.getCurrPageNumIndx();
+                Log.d(TAG,"pageIndx ="+pageIndx);
+                List<Integer> pageNumList = chapter.getPageNumList();
+                if(pageIndx == 0){
+                    this.mCustomView.setmText(chapter.getContent().substring(0,pageNumList.get(0)));
+                }
+                else{
+                    this.mCustomView.setmText(chapter.getContent().substring(pageNumList.get(pageIndx - 1),pageNumList.get(pageIndx)));
+                }
+                //this.mCustomView.setmText(mb.getCurrChapter().getContent());
+            } else {
                 //从文件中读取。文件操作属于耗时操作。
                 Log.d(TAG, "chapter is empty" + "currindx= " + mb.getCurrChapterIndx());
                 progressBar.setVisibility(View.VISIBLE);
@@ -87,7 +87,7 @@ public class ChapterContentActivity extends AppCompatActivity {
                 tv.setVisibility(View.VISIBLE);
                 ShowChapterTask sct = new ShowChapterTask(mCustomView,false,false);
                 sct.execute();
-//            }
+            }
         }
     }
 

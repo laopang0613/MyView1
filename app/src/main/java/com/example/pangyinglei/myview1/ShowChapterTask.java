@@ -1,6 +1,7 @@
 package com.example.pangyinglei.myview1;
 
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.provider.ContactsContract;
 import android.text.Layout;
 import android.util.Log;
@@ -10,6 +11,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by pangyinglei on 2017/1/16.
@@ -55,7 +57,55 @@ public class ShowChapterTask extends AsyncTask<Void,Void,String> {
         //不保存章节内容，避免当前章节内容过长。
         mb.getCurrChapter().setContent(currChapterContent);
         MyFileUtils.setPageNumList(currChapterContent,currChapterIndx,mb,MyFileUtils.getPaint());
-        //this.setCacheChapter(currChapterIndx);
+
+//        Log.d(TAG,"before cachePreindx="+mb.getCachePreChapterIndx()+"cacheNextIndx="+mb.getCacheNextChapterIndx()+
+//        "currChapterIndx="+mb.getCurrChapterIndx());
+//        //先清空缓存的内容。
+//        if(mb.getCachePreChapterIndx() != -1){
+//            mb.getChapterList().get(mb.getCachePreChapterIndx()).setContent("");
+//        }
+//        if(mb.getCacheNextChapterIndx() != -1){
+//            mb.getChapterList().get(mb.getCacheNextChapterIndx()).setContent("");
+//        }
+
+//        //缓存前后一章的内容。
+//        if(mb.getCurrChapterIndx() != 0) {
+//            mb.getPrevChapter().setContent(MyFileUtils.getPrevChapterContent());
+//            mb.setCachePreChapterIndx(mb.getCurrChapterIndx() - 1);
+//        }
+//        if(mb.getCurrChapterIndx() != mb.getChapterList().size() - 1) {
+//            mb.getNextChapter().setContent(MyFileUtils.getNextChapterContent());
+//            mb.setCacheNextChapterIndx(mb.getCurrChapterIndx() + 1);
+//        }
+//        Log.d(TAG,"after cachePreindx="+mb.getCachePreChapterIndx()+"cacheNextIndx="+mb.getCacheNextChapterIndx()+
+//                "currChapterIndx="+mb.getCurrChapterIndx());
+
+        //缓存当前章节索引。
+        Set<Integer> cacheChapterIndxs = mb.getCacheChapterIndxs();
+        synchronized (mb.getCacheChapterIndxs()) {
+            MyFileUtils.addCacheChapterIndx(currChapterIndx);
+        }
+        synchronized (mb.getCacheChapterIndxs()) {
+            if (currChapterIndx != 0) {
+                if (cacheChapterIndxs.contains(currChapterIndx - 1)) {
+//                    mb.setCachePreChapterIndx(currChapterIndx - 1);
+                } else {
+                    mb.getChapterList().get(currChapterIndx - 1).setContent(MyFileUtils.getPrevChapterContent());
+                }
+                MyFileUtils.addCacheChapterIndx(currChapterIndx - 1);
+            }
+        }
+        synchronized (mb.getCacheChapterIndxs()) {
+            if (currChapterIndx != mb.getChapterList().size() - 1) {
+                if (cacheChapterIndxs.contains(currChapterIndx + 1)) {
+//                    mb.setCacheNextChapterIndx(currChapterIndx + 1);
+                } else {
+                    mb.getChapterList().get(currChapterIndx + 1).setContent(MyFileUtils.getNextChapterContent());
+                }
+                MyFileUtils.addCacheChapterIndx(currChapterIndx + 1);
+            }
+        }
+
 
         Chapter currChapter = mb.getCurrChapter();
         //Log.d(TAG,"currchaptername = "+currChapter.getName());
@@ -104,5 +154,26 @@ public class ShowChapterTask extends AsyncTask<Void,Void,String> {
         ChapterContentActivity.getProgressBar().setVisibility(View.GONE);
         ChapterContentActivity.getTextView().setVisibility(View.GONE);
         mcv.setmText(s);
+        for(Chapter c:BookshelfApp.getBookshelfApp().getCurrMyBook().getChapterList()){
+            if(!c.isEmpty()){
+               // Log.d(TAG,"c.len ="+c.getContent().length());
+                Log.d(TAG,"c.name="+c.getName()+"c.len="+c.getContent().length());
+            }
+        }
+//        final Handler handler = new Handler();
+//
+//        handler.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+//                int currChapterIndx = mb.getCurrChapterIndx();
+//                if(currChapterIndx == 0){
+//
+//                }
+//            }
+//        });
+
     }
+
+
 }

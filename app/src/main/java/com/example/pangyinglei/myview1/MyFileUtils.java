@@ -2,6 +2,7 @@ package com.example.pangyinglei.myview1;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Paint;
@@ -24,7 +25,10 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -251,17 +255,31 @@ public class MyFileUtils {
         //去掉分割文件，分割文件会多占用户一倍存储空间。
         //cutFile(fileNamePrefix);
         Log.d(TAG,"cut done");
+
+        //预加载后一章,即第二章的内容。
+        String nextChapterContent = MyFileUtils.getNextChapterContent();
+        Log.d(TAG,"nextchaptercontent="+nextChapterContent);
+        mb.getNextChapter().setContent(nextChapterContent);
+        setPageNumList(nextChapterContent,1,mb,mPaint);
+//        mb.setCacheNextChapterIndx(1);
+
+
         //获取当前章节内容。
         String currChapterContent = getChapterContent(mb.getCurrChapterIndx(),mb);
         //Log.d(TAG,"currChaterContent = "+currChapterContent);
-        //不保存章节内容，避免章节内容过长。
         mb.getCurrChapter().setContent(currChapterContent);
-        //Log.d(TAG,"mb.currChaptercont = "+mb.getCurrChapter().getContent());
-        //Log.d(TAG,"mb.nextChaptercont = "+mb.getNextChapter().getContent());
         //获取当前章节的每页索引。
         setPageNumList(currChapterContent,mb.getCurrChapterIndx(),mb,mPaint);
-        //setCacheChapter(mb.getCurrChapterIndx(),mb,mPaint);
-        //BookshelfApp.getBookshelfApp().getBooks().set(0,mb);
+
+        //缓存第1，2章
+        Set<Integer> cacheChapterIndxs = mb.getCacheChapterIndxs();
+        Log.d(TAG,"cacheChapterIndxs.size="+cacheChapterIndxs.size());
+        synchronized (mb.getCacheChapterIndxs()){
+            cacheChapterIndxs.add(0);
+            cacheChapterIndxs.add(1);
+            mb.setCacheChapterIndxs(cacheChapterIndxs);
+        }
+
         if(mb.getCurrChapter().getPageNumList().size() == 0){
             Log.e(TAG,"pageNumList.size == 0");
         }
@@ -546,85 +564,6 @@ public class MyFileUtils {
         return chapterContent.toString().trim();
     }
 
-    public static void setCacheChapter(int currChapterIndx,MyBook mb,Paint mPaint){
-        //Log.d(TAG,"cachechapternums = "+mb.getCacheChapterNums().size());
-        if(currChapterIndx==0){
-            //缓存第一章节。
-            if(mb.getNextChapter().isEmpty()==true){
-                //将第0个缓存章节清空。
-                mb.getChapterList().get(mb.getCacheChapterNums().get(0)).setContent("");
-                mb.getCacheChapterNums().remove(0);
-                mb.getCacheChapterNums().add(1);
-                String content = getChapterContent(1,mb);
-                mb.getNextChapter().setContent(content);
-                setPageNumList(content,1,mb,mPaint);
-            }
-        }
-        else if(currChapterIndx == mb.getChapterList().size() - 1){
-            //缓存第size - 2个章节
-            if(mb.getPrevChapter().isEmpty() == true){
-                //将第0个缓存章节清空。
-                mb.getChapterList().get(mb.getCacheChapterNums().get(0)).setContent("");
-                mb.getCacheChapterNums().remove(0);
-
-                mb.getCacheChapterNums().add(currChapterIndx - 2);
-                String content = getChapterContent(currChapterIndx - 2,mb);
-                mb.getPrevChapter().setContent(content);
-                setPageNumList(content,currChapterIndx - 2,mb,mPaint);
-            }
-        }
-        else{
-            //前后两张都未缓存。
-            if(mb.getPrevChapter().isEmpty()==true&&mb.getNextChapter().isEmpty()==true){
-                mb.getChapterList().get(mb.getCacheChapterNums().get(0)).setContent("");
-                mb.getChapterList().get(mb.getCacheChapterNums().get(1)).setContent("");
-                mb.getCacheChapterNums().clear();
-
-                mb.getCacheChapterNums().add(currChapterIndx - 1);
-                String content = getChapterContent(currChapterIndx - 1,mb);
-                Log.d(TAG,"content_len = "+content.length()+"currchapterIndx = "+currChapterIndx);
-                mb.getPrevChapter().setContent(content);
-                setPageNumList(content,currChapterIndx - 1,mb,mPaint);
-
-                mb.getCacheChapterNums().add(currChapterIndx + 1);
-                content = getChapterContent(currChapterIndx + 1,mb);
-                Log.d(TAG,"content_len2 ="+content.length());
-                mb.getNextChapter().setContent(content);
-                setPageNumList(content,currChapterIndx + 1,mb,mPaint);
-            }
-            //前一章已缓存，后一章未缓存。
-            else if(mb.getPrevChapter().isEmpty() == false&& mb.getNextChapter().isEmpty() == true){
-                for(int i = 0;i<2;i++){
-                    if(mb.getCacheChapterNums().get(i)!= currChapterIndx-1){
-                        mb.getChapterList().get(mb.getCacheChapterNums().get(i)).setContent("");
-                        mb.getCacheChapterNums().remove(i);
-
-                        mb.getCacheChapterNums().add(currChapterIndx+1);
-                        String content = getChapterContent(currChapterIndx + 1,mb);
-                        mb.getNextChapter().setContent(content);
-                        setPageNumList(content,currChapterIndx + 1,mb,mPaint);
-                    }
-                }
-            }
-            //前一章未缓存，后一章已缓存。
-            else if(mb.getPrevChapter().isEmpty() == true&& mb.getNextChapter().isEmpty() == false){
-                for(int i = 0;i<2;i++){
-                    if(mb.getCacheChapterNums().get(i)!= currChapterIndx+1){
-                        mb.getChapterList().get(mb.getCacheChapterNums().get(i)).setContent("");
-                        mb.getCacheChapterNums().remove(i);
-
-                        mb.getCacheChapterNums().add(currChapterIndx - 1);
-                        String content = getChapterContent(currChapterIndx - 1,mb);
-                        mb.getPrevChapter().setContent(content);
-                        setPageNumList(content,currChapterIndx - 1,mb,mPaint);
-                    }
-                }
-            }
-
-        }
-
-    }
-
     public static  void setPageNumList(String destStr,int chapterIndx,MyBook mb,Paint mPaint){
         mPaint.setTextSize(txtSize);
         int totalChar = destStr.length();
@@ -853,5 +792,63 @@ public class MyFileUtils {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String getPrevChapterContent(){
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        int currChapterIndx = mb.getCurrChapterIndx();
+        if(currChapterIndx == 0){
+            return "";
+        }
+        else{
+            String content = getChapterContent(currChapterIndx - 1,mb);
+            setPageNumList(content,currChapterIndx - 1,mb,mPaint);
+            return content;
+        }
+    }
+
+    public static String getNextChapterContent(){
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        int currChapterIndx = mb.getCurrChapterIndx();
+        if(currChapterIndx == mb.getChapterList().size() - 1){
+            return "";
+        }
+        else{
+            String content = getChapterContent(currChapterIndx + 1,mb);
+            setPageNumList(content,currChapterIndx + 1,mb,mPaint);
+            return content;
+        }
+    }
+
+
+    public static void addCacheChapterIndx(int indx){
+        Log.d(TAG,"addCacheChapterIndx");
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        Set<Integer> cacheChapterIndxs = mb.getCacheChapterIndxs();
+        Integer integer;
+
+        if (!cacheChapterIndxs.contains(indx)) {
+            if (cacheChapterIndxs.size() >= 5) {
+                Iterator<Integer> iterator = cacheChapterIndxs.iterator();
+                if (iterator.hasNext()) {
+                    integer = iterator.next();
+                    Log.d(TAG, "integer = " + integer);
+                    cacheChapterIndxs.remove(integer);
+                    cacheChapterIndxs.add(indx);
+                    mb.getChapterList().get(integer.intValue()).setContent("");
+                }
+            } else {
+                cacheChapterIndxs.add(indx);
+            }
+
+        } else {
+            Log.d(TAG, "addCacheChapterIndx contain indx=" + indx);
+            //如果已缓存，将该索引放到最后。
+            cacheChapterIndxs.remove(indx);
+            cacheChapterIndxs.add(indx);
+        }
+
+
+
     }
 }

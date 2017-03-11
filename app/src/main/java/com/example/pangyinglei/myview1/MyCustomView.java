@@ -9,7 +9,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GestureDetectorCompat;
@@ -33,6 +35,7 @@ import android.widget.TextView;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -67,6 +70,16 @@ public class MyCustomView extends View {
     //private int pageBeginIndx = 0;
     private int pageEndIndx = 0;
     private float pageIndxSize = 30f;
+
+
+    private boolean isTouchScroll = false;
+    private float touchPointX = 1080;
+    private float touchPointY = 1776;
+    private Path path = new Path();
+    private Path pathTwo = new Path();
+
+    private String nextPageContent;
+
 
     private PopupWindow mPopupWindow;
 
@@ -130,14 +143,131 @@ public class MyCustomView extends View {
     protected void onDraw(Canvas canvas) {
         Log.d(TAG,"onDraw");
         super.onDraw(canvas);
-        int c = mPaint.getColor();
+        //int c = mPaint.getColor();
+
+        path.reset();
+        pathTwo.reset();
+
+        float bx,by;
+        float cx,cy;
+        float dx,dy;
+        float ex,ey;
+        float fx,fy;
+        float gx,gy;
+        float hx,hy;
+        float ix,iy;
+        float jx,jy;
+        float kx,ky;
+
+        bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
+        by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+
+        //Log.d(TAG, "bx =" + bx + " by=" + by);
+        ex = (touchPointX + bx) / 2;
+        ey = (touchPointY + by) / 2;
+        //Log.d(TAG, "ex =" + ex + " ey =" + ey);
+        cx = ex - (by - ey) * (by - ey) / (bx - ex);
+        cy = by;
+        //Log.d(TAG, "cx =" + cx + " cy=" + cy);
+        dx = bx;
+        dy = ey - (bx - ex) * (bx - ex) / (by - ey);
+        //Log.d(TAG, "dx =" + dx + " dy =" + dy);
+        fx = (cx + touchPointX) / 2;
+        fy = (cy + touchPointY) / 2;
+        //Log.d(TAG, "fx =" + fx + " fy=" + fy);
+        gx = (touchPointX + dx) / 2;
+        gy = (touchPointY + dy) / 2;
+        //Log.d(TAG, "gx =" + gx + " gy=" + gy);
+        hx = bx - (bx - cx) / 2 * 3;
+        hy = by;
+        //Log.d(TAG, "hx =" + hx + " hy=" + hy);
+        ix = bx;
+        iy = by - (by - dy) / 2 * 3;
+        //Log.d(TAG, "ix =" + ix + " iy=" + iy);
+        jx = ((cx + hx) / 2 + (cx + fx) / 2) / 2;
+        jy = (cy + (cy + fy) / 2) / 2;
+        //Log.d(TAG, "jx=" + jx + " jy=" + jy);
+        kx = ((gx + dx) / 2 + dx) / 2;
+        ky = ((gy + dy) / 2 + (iy + dy) / 2) / 2;
+        //Log.d(TAG, "kx=" + kx + " ky=" + ky);
+
+        path.moveTo(hx, hy);
+        path.quadTo(cx, cy, fx, fy);
+        path.lineTo(touchPointX, touchPointY);
+        path.lineTo(gx, gy);
+        path.quadTo(dx, dy, ix, iy);
+        path.lineTo(bx, by);
+        path.close();
+
+        canvas.save();
+
+        //path.moveTo(jx,jy);
+        //path.lineTo(kx,ky);
+
+        canvas.clipRect(0, 0, bx, by);
+        canvas.clipPath(path, Region.Op.DIFFERENCE);
+
+        //mPaint.setColor(c);
+        drawPageContent(canvas, mText);
+
+        mPaint.setColor(mTextColor);
+        Paint.Style style = mPaint.getStyle();
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeWidth(3);
+        mPaint.setAntiAlias(false);
+        canvas.drawPath(path, mPaint);
+        canvas.restore();
+
+        mPaint.setStyle(style);
+
+//        canvas.save();
+//        path.moveTo(kx,ky);
+//        path.lineTo(jx,jy);
+//        canvas.clipRect(0,0,bx,by);
+//        canvas.clipPath(path,Region.Op.INTERSECT);
+//        canvas.drawLine(jx, jy, kx, ky, mPaint);
+//        canvas.restore();
+        pathTwo.moveTo(jx,jy);
+        pathTwo.lineTo(touchPointX,touchPointY);
+        pathTwo.lineTo(kx,ky);
+        pathTwo.close();
+        canvas.save();
+
+        canvas.clipPath(pathTwo);
+        canvas.clipPath(path,Region.Op.REVERSE_DIFFERENCE);
+        //drawPageContent(canvas,mText);
+        //drawNextPageContent(canvas);
+        canvas.restore();
+
+
+    }
+
+    private void drawNextPageContent(Canvas canvas){
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        Chapter currChapter = mb.getCurrChapter();
+        int currPageIndx = currChapter.getCurrPageNumIndx();
+        List<Integer> pageList = currChapter.getPageNumList();
+        String content = "";
+        //如果当前页是本章最后一页
+        if(currPageIndx == currChapter.getPageNumList().size() -1){
+            Chapter nextChapter = mb.getNextChapter();
+            //获取下章第一页内容
+            content = nextChapter.getContent().substring(0,nextChapter.getPageNumList().get(0));
+        }
+        else{
+            content = currChapter.getContent().substring(pageList.get(currPageIndx),pageList.get(currPageIndx+1));
+        }
+        drawPageContent(canvas,content);
+    }
+
+    private void drawPageContent(Canvas canvas,String content){
         //mPaint.setColor(Color.WHITE);
         //canvas.drawRect(mRound,mPaint);
         mPaint.setColor(mTextColor);
-//        canvas.drawText(mText,30f,30f,mPaint);
-//        canvas.drawText(mText,0,mText.length(),TXTTOP_XSTART,TXTTOP_YSTART,mPaint);
-        //Log.d(TAG,"mText = "+mText);
-        if(mText.length() <= 0){
+//        canvas.drawText(content,30f,30f,mPaint);
+//        canvas.drawText(content,0,content.length(),TXTTOP_XSTART,TXTTOP_YSTART,mPaint);
+        //Log.d(TAG,"content = "+content);
+        if(content.length() <= 0){
             return;
         }
 
@@ -149,12 +279,12 @@ public class MyCustomView extends View {
         else{
             drawLittleChapterTitle(chapter.getName(),canvas);
         }
-        //Log.d(TAG,"mText ="+mText);
+        //Log.d(TAG,"content ="+content);
         mPaint.setTextSize(txtSize);
-        pageEndIndx = this.justifyedText(mText,canvas);
+        pageEndIndx = this.justifyedText(content,canvas);
         //不能在这里计算下次要显示的文本，否则多次重绘会自动翻页。
-        //mText = mText.substring(pageEndIndx,mText.length());
-        Log.d(TAG,"pageEndIndx = "+pageEndIndx);
+        //content = content.substring(pageEndIndx,content.length());
+        //Log.d(TAG,"pageEndIndx = "+pageEndIndx);
         //mb.getCurrChapter().getPageNumList()
         drawPageIndx(chapter,canvas);
     }
@@ -455,7 +585,12 @@ public class MyCustomView extends View {
 
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-            //Log.d(TAG,"onscroll"+e1.toString()+e2.toString()+"distancex ="+distanceX+"distancey ="+distanceY);
+            //Log.d(TAG,"onscroll"+"distancex ="+distanceX+"distancey ="+distanceY);
+            //Log.d(TAG,"onscroll +e1.x ="+e1.getX()+"e1.y="+e1.getY()+"e2.x="+e2.getX()+"e2.y="+e2.getY());
+            touchPointX = e2.getX();
+            touchPointY = e2.getY();
+            postInvalidate();
+            //isTouchScroll = true;
             return true;
         }
 
@@ -515,17 +650,48 @@ public class MyCustomView extends View {
 
     //翻页
     private void turnNextPage(){
-        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        Chapter chapter = mb.getCurrChapter();
+
         Log.d(TAG,"pageTotal = "+chapter.getPageTotal());
         int pageNumIndx = chapter.getCurrPageNumIndx();
         Log.d(TAG,"pageNumIndx = "+pageNumIndx);
         pageNumIndx++;
         if(pageNumIndx > chapter.getPageTotal() - 1){
-            gotoNextChapter();
+            Chapter nextChapter;
+            if(mb.getCurrChapterIndx() == mb.getChapterList().size() - 1){
+                return;
+            }
+            else{
+                nextChapter = mb.getNextChapter();
+            }
+            //检查缓存的下章内容是否为空
+            if(nextChapter.isEmpty()) {
+                Log.d(TAG,"turnNextPage nextchapter is empty");
+                gotoNextChapter();
+            }
+            else{
+                //跳转到下一章之前将上一章内容清空。
+                //mb.getCurrChapter().setContent("");
+                Log.d(TAG,"turnNextPage currchapterindx = "+mb.getCurrChapterIndx());
+                Log.d(TAG,"turnNextPage nextChapter.contentlen="+nextChapter.getContent().length());
+                mText = nextChapter.getContent().substring(0,nextChapter.getPageNumList().get(0));
+                int currChapterIndx = mb.getCurrChapterIndx();
+                currChapterIndx++;
+                mb.setCurrChapterIndx(currChapterIndx);
+                mb.getCurrChapter().setCurrPageNumIndx(0);
+                this.postInvalidate();
+                //同时缓存前后章节。
+                CacheChapterContent cacheChapterContent = new CacheChapterContent(currChapterIndx);
+                cacheChapterContent.execute();
+
+            }
         }
         else {
             //重绘制view.
            // mText = mText.substring(this.pageEndIndx, mText.length());
+            Log.d(TAG,"turnNextPage() chapter.len="+chapter.getContent().length()+"pageNumindx ="+pageNumIndx);
+
             mText = chapter.getContent().substring(chapter.getPageNumList().get(pageNumIndx - 1 ),chapter.getPageNumList().get(pageNumIndx));
             this.postInvalidate();
             chapter.setCurrPageNumIndx(pageNumIndx);
@@ -535,14 +701,43 @@ public class MyCustomView extends View {
     }
 
     private void turnPrevPage(){
-        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        Chapter chapter = mb.getCurrChapter();
+
         Log.d(TAG,"pageTotal = "+chapter.getPageTotal());
         int pageNumIndx = chapter.getCurrPageNumIndx();
         Log.d(TAG,"pageNumIndx = "+pageNumIndx);
         pageNumIndx--;
         //Log.d(TAG,"pageNumIndx"+pageNumIndx);
         if(pageNumIndx < 0){
-            gotoPrevChapter();
+            Chapter prevChapter;
+            if(mb.getCurrChapterIndx() == 0) {
+                return;
+            }
+            else{
+                prevChapter = mb.getPrevChapter();
+            }
+
+            if(prevChapter.isEmpty()) {
+                gotoPrevChapter();
+            }
+            else{
+                //跳转到前一章之前清空当前章节内容。
+//                mb.getCurrChapter().setContent("");
+
+                List<Integer> pageNumList = prevChapter.getPageNumList();
+                int endPageIndx = pageNumList.size() - 1;
+                mText = prevChapter.getContent().substring(pageNumList.get(endPageIndx - 1),pageNumList.get(endPageIndx));
+                int currChapterIndx = mb.getCurrChapterIndx();
+                currChapterIndx--;
+                mb.setCurrChapterIndx(currChapterIndx);
+                mb.getCurrChapter().setCurrPageNumIndx(endPageIndx);
+                this.postInvalidate();
+
+                //同时缓存前后章节。
+                CacheChapterContent cacheChapterContent = new CacheChapterContent(currChapterIndx);
+                cacheChapterContent.execute();
+            }
         }
         else {
             //重绘制view.
@@ -570,8 +765,15 @@ public class MyCustomView extends View {
         }
         else{
             Log.d(TAG,"gonextchapter");
-            //每跳转下一章就把上一章的内容清空。
-            mb.getChapterList().get(currChapterIndx - 1).setContent("");
+            //清空缓存
+//            if(mb.getCachePreChapterIndx() != -1){
+//                mb.getChapterList().get(mb.getCachePreChapterIndx()).setContent("");
+//            }
+//            if(mb.getCacheNextChapterIndx() != -1){
+//                mb.getChapterList().get(mb.getCacheNextChapterIndx()).setContent("");
+//            }
+            //跳转下一章之前把当前章节的内容清空。
+//            mb.getChapterList().get(currChapterIndx - 1).setContent("");
             mb.setCurrChapterIndx(currChapterIndx);
             //BookDBHelper.writeChapterIndxToDB(currChapterIndx);
             ShowChapterTask sct = new ShowChapterTask(this,true,false);
@@ -590,7 +792,15 @@ public class MyCustomView extends View {
         }
         else{
             Log.d(TAG,"goPrevChapter");
-            mb.getChapterList().get(currChapterIndx + 1).setContent("");
+            //清空缓存
+//            if(mb.getCachePreChapterIndx() != -1){
+//                mb.getChapterList().get(mb.getCachePreChapterIndx()).setContent("");
+//            }
+//            if(mb.getCacheNextChapterIndx() != -1){
+//                mb.getChapterList().get(mb.getCacheNextChapterIndx()).setContent("");
+//            }
+//            //跳转到前一章之前把当前章节内容清空。
+//            mb.getChapterList().get(currChapterIndx + 1).setContent("");
             mb.setCurrChapterIndx(currChapterIndx);
             //BookDBHelper.writeChapterIndxToDB(currChapterIndx);
             ShowChapterTask sct = new ShowChapterTask(this,true,true);
