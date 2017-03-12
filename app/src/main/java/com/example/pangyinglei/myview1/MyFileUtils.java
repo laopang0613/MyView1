@@ -275,9 +275,10 @@ public class MyFileUtils {
         Set<Integer> cacheChapterIndxs = mb.getCacheChapterIndxs();
         Log.d(TAG,"cacheChapterIndxs.size="+cacheChapterIndxs.size());
         synchronized (mb.getCacheChapterIndxs()){
-            cacheChapterIndxs.add(0);
-            cacheChapterIndxs.add(1);
-            mb.setCacheChapterIndxs(cacheChapterIndxs);
+            MyFileUtils.addCacheChapterIndx(0);
+        }
+        synchronized (mb.getCacheChapterIndxs()){
+            MyFileUtils.addCacheChapterIndx(1);
         }
 
         if(mb.getCurrChapter().getPageNumList().size() == 0){

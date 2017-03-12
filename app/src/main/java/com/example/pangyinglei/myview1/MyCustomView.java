@@ -144,81 +144,83 @@ public class MyCustomView extends View {
         Log.d(TAG,"onDraw");
         super.onDraw(canvas);
         //int c = mPaint.getColor();
+        int currPageIndx = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter().getCurrPageNumIndx();
+        if(isTouchScroll) {
+            path.reset();
+            pathTwo.reset();
 
-        path.reset();
-        pathTwo.reset();
+            float bx, by;
+            float cx, cy;
+            float dx, dy;
+            float ex, ey;
+            float fx, fy;
+            float gx, gy;
+            float hx, hy;
+            float ix, iy;
+            float jx, jy;
+            float kx, ky;
 
-        float bx,by;
-        float cx,cy;
-        float dx,dy;
-        float ex,ey;
-        float fx,fy;
-        float gx,gy;
-        float hx,hy;
-        float ix,iy;
-        float jx,jy;
-        float kx,ky;
+            bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
+            by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
 
-        bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
-        by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+            //Log.d(TAG, "bx =" + bx + " by=" + by);
+            ex = (touchPointX + bx) / 2;
+            ey = (touchPointY + by) / 2;
+            //Log.d(TAG, "ex =" + ex + " ey =" + ey);
+            cx = ex - (by - ey) * (by - ey) / (bx - ex);
+            cy = by;
+            //Log.d(TAG, "cx =" + cx + " cy=" + cy);
+            dx = bx;
+            dy = ey - (bx - ex) * (bx - ex) / (by - ey);
+            //Log.d(TAG, "dx =" + dx + " dy =" + dy);
+            fx = (cx + touchPointX) / 2;
+            fy = (cy + touchPointY) / 2;
+            //Log.d(TAG, "fx =" + fx + " fy=" + fy);
+            gx = (touchPointX + dx) / 2;
+            gy = (touchPointY + dy) / 2;
+            //Log.d(TAG, "gx =" + gx + " gy=" + gy);
+            hx = bx - (bx - cx) / 2 * 3;
+            hy = by;
+            //Log.d(TAG, "hx =" + hx + " hy=" + hy);
+            ix = bx;
+            iy = by - (by - dy) / 2 * 3;
+            //Log.d(TAG, "ix =" + ix + " iy=" + iy);
+            jx = ((cx + hx) / 2 + (cx + fx) / 2) / 2;
+            jy = (cy + (cy + fy) / 2) / 2;
+            //Log.d(TAG, "jx=" + jx + " jy=" + jy);
+            kx = ((gx + dx) / 2 + dx) / 2;
+            ky = ((gy + dy) / 2 + (iy + dy) / 2) / 2;
+            //Log.d(TAG, "kx=" + kx + " ky=" + ky);
 
-        //Log.d(TAG, "bx =" + bx + " by=" + by);
-        ex = (touchPointX + bx) / 2;
-        ey = (touchPointY + by) / 2;
-        //Log.d(TAG, "ex =" + ex + " ey =" + ey);
-        cx = ex - (by - ey) * (by - ey) / (bx - ex);
-        cy = by;
-        //Log.d(TAG, "cx =" + cx + " cy=" + cy);
-        dx = bx;
-        dy = ey - (bx - ex) * (bx - ex) / (by - ey);
-        //Log.d(TAG, "dx =" + dx + " dy =" + dy);
-        fx = (cx + touchPointX) / 2;
-        fy = (cy + touchPointY) / 2;
-        //Log.d(TAG, "fx =" + fx + " fy=" + fy);
-        gx = (touchPointX + dx) / 2;
-        gy = (touchPointY + dy) / 2;
-        //Log.d(TAG, "gx =" + gx + " gy=" + gy);
-        hx = bx - (bx - cx) / 2 * 3;
-        hy = by;
-        //Log.d(TAG, "hx =" + hx + " hy=" + hy);
-        ix = bx;
-        iy = by - (by - dy) / 2 * 3;
-        //Log.d(TAG, "ix =" + ix + " iy=" + iy);
-        jx = ((cx + hx) / 2 + (cx + fx) / 2) / 2;
-        jy = (cy + (cy + fy) / 2) / 2;
-        //Log.d(TAG, "jx=" + jx + " jy=" + jy);
-        kx = ((gx + dx) / 2 + dx) / 2;
-        ky = ((gy + dy) / 2 + (iy + dy) / 2) / 2;
-        //Log.d(TAG, "kx=" + kx + " ky=" + ky);
+            path.moveTo(hx, hy);
+            path.quadTo(cx, cy, fx, fy);
+            path.lineTo(touchPointX, touchPointY);
+            path.lineTo(gx, gy);
+            path.quadTo(dx, dy, ix, iy);
+            path.lineTo(bx, by);
+            path.close();
 
-        path.moveTo(hx, hy);
-        path.quadTo(cx, cy, fx, fy);
-        path.lineTo(touchPointX, touchPointY);
-        path.lineTo(gx, gy);
-        path.quadTo(dx, dy, ix, iy);
-        path.lineTo(bx, by);
-        path.close();
+            canvas.save();
 
-        canvas.save();
+            //path.moveTo(jx,jy);
+            //path.lineTo(kx,ky);
 
-        //path.moveTo(jx,jy);
-        //path.lineTo(kx,ky);
+            canvas.clipRect(0, 0, bx, by);
+            canvas.clipPath(path, Region.Op.DIFFERENCE);
 
-        canvas.clipRect(0, 0, bx, by);
-        canvas.clipPath(path, Region.Op.DIFFERENCE);
+            //mPaint.setColor(c);
 
-        //mPaint.setColor(c);
-        drawPageContent(canvas, mText);
+            drawPageContent(canvas, mText,currPageIndx);
 
-        mPaint.setColor(mTextColor);
-        Paint.Style style = mPaint.getStyle();
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeWidth(3);
-        mPaint.setAntiAlias(false);
-        canvas.drawPath(path, mPaint);
-        canvas.restore();
+            mPaint.setColor(mTextColor);
+            Paint.Style style = mPaint.getStyle();
+            mPaint.setStyle(Paint.Style.STROKE);
+            mPaint.setStrokeWidth(3);
+            mPaint.setAntiAlias(false);
+            canvas.drawPath(path, mPaint);
+            canvas.restore();
 
-        mPaint.setStyle(style);
+            mPaint.setStyle(style);
 
 //        canvas.save();
 //        path.moveTo(kx,ky);
@@ -227,18 +229,23 @@ public class MyCustomView extends View {
 //        canvas.clipPath(path,Region.Op.INTERSECT);
 //        canvas.drawLine(jx, jy, kx, ky, mPaint);
 //        canvas.restore();
-        pathTwo.moveTo(jx,jy);
-        pathTwo.lineTo(touchPointX,touchPointY);
-        pathTwo.lineTo(kx,ky);
-        pathTwo.close();
-        canvas.save();
+            pathTwo.moveTo(jx, jy);
+            pathTwo.lineTo(touchPointX, touchPointY);
+            pathTwo.lineTo(kx, ky);
+            pathTwo.close();
+            canvas.save();
 
-        canvas.clipPath(pathTwo);
-        canvas.clipPath(path,Region.Op.REVERSE_DIFFERENCE);
-        //drawPageContent(canvas,mText);
-        //drawNextPageContent(canvas);
-        canvas.restore();
-
+            canvas.clipPath(pathTwo);
+            canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+            //drawPageContent(canvas,mText);
+            drawNextPageContent(canvas);
+            canvas.drawLine(jx, jy, kx, ky, mPaint);
+            canvas.restore();
+            isTouchScroll = false;
+        }
+        else{
+            drawPageContent(canvas, mText,currPageIndx);
+        }
 
     }
 
@@ -248,19 +255,31 @@ public class MyCustomView extends View {
         int currPageIndx = currChapter.getCurrPageNumIndx();
         List<Integer> pageList = currChapter.getPageNumList();
         String content = "";
+        int nextPageIndx;
         //如果当前页是本章最后一页
         if(currPageIndx == currChapter.getPageNumList().size() -1){
             Chapter nextChapter = mb.getNextChapter();
+            if(nextChapter == null){
+                Log.e(TAG,"nextChapter == null");
+                return;
+            }
+            if(nextChapter.getContent().isEmpty()){
+                Log.e(TAG,"nextChapter is empty");
+                return;
+            }
             //获取下章第一页内容
             content = nextChapter.getContent().substring(0,nextChapter.getPageNumList().get(0));
+            nextPageIndx = 0;
         }
         else{
             content = currChapter.getContent().substring(pageList.get(currPageIndx),pageList.get(currPageIndx+1));
+            nextPageIndx = currPageIndx + 1;
         }
-        drawPageContent(canvas,content);
+
+        drawPageContent(canvas,content,nextPageIndx);
     }
 
-    private void drawPageContent(Canvas canvas,String content){
+    private void drawPageContent(Canvas canvas,String content,int currPageIndx){
         //mPaint.setColor(Color.WHITE);
         //canvas.drawRect(mRound,mPaint);
         mPaint.setColor(mTextColor);
@@ -272,7 +291,7 @@ public class MyCustomView extends View {
         }
 
         Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
-        if(chapter.getCurrPageNumIndx() == 0){
+        if(currPageIndx == 0){
             //Log.d(TAG,"chapterPageIndx = "+ chapter.getCurrPageNumIndx()+" chaptertitle = "+chapter.getName());
             drawBigChapterTitle(chapter.getName(),canvas);
         }
@@ -281,7 +300,7 @@ public class MyCustomView extends View {
         }
         //Log.d(TAG,"content ="+content);
         mPaint.setTextSize(txtSize);
-        pageEndIndx = this.justifyedText(content,canvas);
+        pageEndIndx = this.justifyedText(content,canvas,currPageIndx);
         //不能在这里计算下次要显示的文本，否则多次重绘会自动翻页。
         //content = content.substring(pageEndIndx,content.length());
         //Log.d(TAG,"pageEndIndx = "+pageEndIndx);
@@ -432,11 +451,11 @@ public class MyCustomView extends View {
     }
 
     //画每一页的文本字串显示，并返回下一页的起始字串索引。
-    private int justifyedText(String pageStr,Canvas canvas){
+    private int justifyedText(String pageStr,Canvas canvas,int currPageIndx){
         //Log.d(TAG,"pageStr = "+pageStr);
         float lastLineHeight;
         Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
-        if(chapter.getCurrPageNumIndx() == 0){
+        if(currPageIndx == 0){
             lastLineHeight = firstPageYStart;
         }
         else{
@@ -580,6 +599,9 @@ public class MyCustomView extends View {
                 Log.d(TAG,"turnNextPage");
                 turnNextPage();
             }
+            touchPointX = 1080f;
+            touchPointY = 1776f;
+            postInvalidate();
             return true;
         }
 
@@ -589,6 +611,7 @@ public class MyCustomView extends View {
             //Log.d(TAG,"onscroll +e1.x ="+e1.getX()+"e1.y="+e1.getY()+"e2.x="+e2.getX()+"e2.y="+e2.getY());
             touchPointX = e2.getX();
             touchPointY = e2.getY();
+            isTouchScroll = true;
             postInvalidate();
             //isTouchScroll = true;
             return true;
