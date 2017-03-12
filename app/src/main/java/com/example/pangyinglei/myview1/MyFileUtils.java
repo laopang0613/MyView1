@@ -848,8 +848,13 @@ public class MyFileUtils {
             cacheChapterIndxs.remove(indx);
             cacheChapterIndxs.add(indx);
         }
+    }
 
+    public static final int getAppHeight(){
+        return BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+    }
 
-
+    public static final int getAppWidth(){
+        return BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
     }
 }

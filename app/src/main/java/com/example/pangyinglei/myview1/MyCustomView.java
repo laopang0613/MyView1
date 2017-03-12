@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.TypedArray;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -73,10 +74,15 @@ public class MyCustomView extends View {
 
 
     private boolean isTouchScroll = false;
-    private float touchPointX = 1080;
-    private float touchPointY = 1776;
+    private float touchPointX;
+    private float touchPointY;
     private Path path = new Path();
     private Path pathTwo = new Path();
+
+    //使用双缓冲避免闪烁，定义内存的图片。
+    private  Bitmap cacheBitmap;
+    private Canvas cacheCanvas;
+
 
     private String nextPageContent;
 
@@ -119,11 +125,21 @@ public class MyCustomView extends View {
     }
 
     private void init(){
+        int mWidth = MyFileUtils.getAppWidth();
+        int mHeight = MyFileUtils.getAppHeight();
+        touchPointX = mWidth;
+        touchPointY = mHeight;
+
         mPaint = new Paint();
         mPaint.setTextSize(mTextSize);
         //mRound = new Rect(0,0,1000,1800);
         float tmpSize = mPaint.getTextSize();
         Log.d(TAG,"tmpSize = "+tmpSize);
+
+        //双缓冲
+        cacheBitmap = Bitmap.createBitmap(mWidth,mHeight, Bitmap.Config.ARGB_8888);
+        cacheCanvas = new Canvas();
+        cacheCanvas.setBitmap(cacheBitmap);
 
         //Paint.FontMetrics fm = mPaint.getFontMetrics();
         //Log.d(TAG,"mText.length = "+mText.length());
@@ -144,109 +160,105 @@ public class MyCustomView extends View {
         Log.d(TAG,"onDraw");
         super.onDraw(canvas);
         //int c = mPaint.getColor();
+
         int currPageIndx = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter().getCurrPageNumIndx();
         if(isTouchScroll) {
-            path.reset();
-            pathTwo.reset();
-
-            float bx, by;
-            float cx, cy;
-            float dx, dy;
-            float ex, ey;
-            float fx, fy;
-            float gx, gy;
-            float hx, hy;
-            float ix, iy;
-            float jx, jy;
-            float kx, ky;
-
-            bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
-            by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
-
-            //Log.d(TAG, "bx =" + bx + " by=" + by);
-            ex = (touchPointX + bx) / 2;
-            ey = (touchPointY + by) / 2;
-            //Log.d(TAG, "ex =" + ex + " ey =" + ey);
-            cx = ex - (by - ey) * (by - ey) / (bx - ex);
-            cy = by;
-            //Log.d(TAG, "cx =" + cx + " cy=" + cy);
-            dx = bx;
-            dy = ey - (bx - ex) * (bx - ex) / (by - ey);
-            //Log.d(TAG, "dx =" + dx + " dy =" + dy);
-            fx = (cx + touchPointX) / 2;
-            fy = (cy + touchPointY) / 2;
-            //Log.d(TAG, "fx =" + fx + " fy=" + fy);
-            gx = (touchPointX + dx) / 2;
-            gy = (touchPointY + dy) / 2;
-            //Log.d(TAG, "gx =" + gx + " gy=" + gy);
-            hx = bx - (bx - cx) / 2 * 3;
-            hy = by;
-            //Log.d(TAG, "hx =" + hx + " hy=" + hy);
-            ix = bx;
-            iy = by - (by - dy) / 2 * 3;
-            //Log.d(TAG, "ix =" + ix + " iy=" + iy);
-            jx = ((cx + hx) / 2 + (cx + fx) / 2) / 2;
-            jy = (cy + (cy + fy) / 2) / 2;
-            //Log.d(TAG, "jx=" + jx + " jy=" + jy);
-            kx = ((gx + dx) / 2 + dx) / 2;
-            ky = ((gy + dy) / 2 + (iy + dy) / 2) / 2;
-            //Log.d(TAG, "kx=" + kx + " ky=" + ky);
-
-            path.moveTo(hx, hy);
-            path.quadTo(cx, cy, fx, fy);
-            path.lineTo(touchPointX, touchPointY);
-            path.lineTo(gx, gy);
-            path.quadTo(dx, dy, ix, iy);
-            path.lineTo(bx, by);
-            path.close();
-
-            canvas.save();
-
-            //path.moveTo(jx,jy);
-            //path.lineTo(kx,ky);
-
-            canvas.clipRect(0, 0, bx, by);
-            canvas.clipPath(path, Region.Op.DIFFERENCE);
-
-            //mPaint.setColor(c);
-
-            drawPageContent(canvas, mText,currPageIndx);
-
-            mPaint.setColor(mTextColor);
-            Paint.Style style = mPaint.getStyle();
-            mPaint.setStyle(Paint.Style.STROKE);
-            mPaint.setStrokeWidth(3);
-            mPaint.setAntiAlias(false);
-            canvas.drawPath(path, mPaint);
-            canvas.restore();
-
-            mPaint.setStyle(style);
-
-//        canvas.save();
-//        path.moveTo(kx,ky);
-//        path.lineTo(jx,jy);
-//        canvas.clipRect(0,0,bx,by);
-//        canvas.clipPath(path,Region.Op.INTERSECT);
-//        canvas.drawLine(jx, jy, kx, ky, mPaint);
-//        canvas.restore();
-            pathTwo.moveTo(jx, jy);
-            pathTwo.lineTo(touchPointX, touchPointY);
-            pathTwo.lineTo(kx, ky);
-            pathTwo.close();
-            canvas.save();
-
-            canvas.clipPath(pathTwo);
-            canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
-            //drawPageContent(canvas,mText);
-            drawNextPageContent(canvas);
-            canvas.drawLine(jx, jy, kx, ky, mPaint);
-            canvas.restore();
-            isTouchScroll = false;
+            canvas.drawBitmap(cacheBitmap,0,0,mPaint);
         }
         else{
             drawPageContent(canvas, mText,currPageIndx);
         }
+    }
 
+    private void drawTurnPageAnimation(Canvas canvas){
+        int currPageIndx = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter().getCurrPageNumIndx();
+        path.reset();
+        pathTwo.reset();
+
+        //先刷一层背景色。
+        int color = mPaint.getColor();
+        mPaint.setColor(Color.WHITE);
+        canvas.drawRect(0,0,MyFileUtils.getAppWidth(),MyFileUtils.getAppHeight(),mPaint);
+        mPaint.setColor(color);
+
+        float bx, by;
+        float cx, cy;
+        float dx, dy;
+        float ex, ey;
+        float fx, fy;
+        float gx, gy;
+        float hx, hy;
+        float ix, iy;
+        float jx, jy;
+        float kx, ky;
+
+        bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
+        by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+
+        //Log.d(TAG, "bx =" + bx + " by=" + by);
+        ex = (touchPointX + bx) / 2;
+        ey = (touchPointY + by) / 2;
+        //Log.d(TAG, "ex =" + ex + " ey =" + ey);
+        cx = ex - (by - ey) * (by - ey) / (bx - ex);
+        cy = by;
+        //Log.d(TAG, "cx =" + cx + " cy=" + cy);
+        dx = bx;
+        dy = ey - (bx - ex) * (bx - ex) / (by - ey);
+        //Log.d(TAG, "dx =" + dx + " dy =" + dy);
+        fx = (cx + touchPointX) / 2;
+        fy = (cy + touchPointY) / 2;
+        //Log.d(TAG, "fx =" + fx + " fy=" + fy);
+        gx = (touchPointX + dx) / 2;
+        gy = (touchPointY + dy) / 2;
+        //Log.d(TAG, "gx =" + gx + " gy=" + gy);
+        hx = bx - (bx - cx) / 2 * 3;
+        hy = by;
+        //Log.d(TAG, "hx =" + hx + " hy=" + hy);
+        ix = bx;
+        iy = by - (by - dy) / 2 * 3;
+        //Log.d(TAG, "ix =" + ix + " iy=" + iy);
+        jx = ((cx + hx) / 2 + (cx + fx) / 2) / 2;
+        jy = (cy + (cy + fy) / 2) / 2;
+        //Log.d(TAG, "jx=" + jx + " jy=" + jy);
+        kx = ((gx + dx) / 2 + dx) / 2;
+        ky = ((gy + dy) / 2 + (iy + dy) / 2) / 2;
+        //Log.d(TAG, "kx=" + kx + " ky=" + ky);
+
+        path.moveTo(hx, hy);
+        path.quadTo(cx, cy, fx, fy);
+        path.lineTo(touchPointX, touchPointY);
+        path.lineTo(gx, gy);
+        path.quadTo(dx, dy, ix, iy);
+        path.lineTo(bx, by);
+        path.close();
+
+        canvas.save();
+        canvas.clipRect(0, 0, bx, by);
+        canvas.clipPath(path, Region.Op.DIFFERENCE);
+        drawPageContent(canvas, mText,currPageIndx);
+        mPaint.setColor(mTextColor);
+        Paint.Style style = mPaint.getStyle();
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeWidth(3);
+        mPaint.setAntiAlias(false);
+        canvas.drawPath(path, mPaint);
+        canvas.restore();
+
+        mPaint.setStyle(style);
+        pathTwo.moveTo(jx, jy);
+        pathTwo.lineTo(touchPointX, touchPointY);
+        pathTwo.lineTo(kx, ky);
+        pathTwo.close();
+
+        canvas.save();
+        canvas.clipPath(pathTwo);
+        canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+        //drawPageContent(canvas,mText);
+        drawNextPageContent(canvas);
+        canvas.drawLine(jx, jy, kx, ky, mPaint);
+        canvas.restore();
+
+        isTouchScroll = false;
     }
 
     private void drawNextPageContent(Canvas canvas){
@@ -574,18 +586,20 @@ public class MyCustomView extends View {
 
     public class MyGestureDetector extends GestureDetector.SimpleOnGestureListener{
         float xDown = 0,yDown = 0,xFling = 0,yFling = 0;
+        private float currTime;
         @Override
         public boolean onDown(MotionEvent e) {
-            //Log.d(TAG,"ondown "+e.toString());
+            Log.d(TAG,"MyGestureDetector ondown "+e.toString());
             xDown = e.getX();
             yDown = e.getY();
             Log.d(TAG,"xdown ="+xDown+" ydown ="+yDown);
+            currTime = System.currentTimeMillis();
             return true;
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            //Log.d(TAG,"onfling"+e1.toString()+e2.toString()+"velocityx ="+velocityX+"velocityy="+velocityY);
+            Log.d(TAG,"MyGestureDetector onfling"+e1.toString()+e2.toString()+"velocityx ="+velocityX+"velocityy="+velocityY);
             xFling = e2.getX();
             yFling = e2.getY();
             //Log.d(TAG,"xfling ="+xFling+" yFling ="+yFling);
@@ -599,21 +613,23 @@ public class MyCustomView extends View {
                 Log.d(TAG,"turnNextPage");
                 turnNextPage();
             }
-            touchPointX = 1080f;
-            touchPointY = 1776f;
+            touchPointX = MyFileUtils.getAppWidth();
+            touchPointY = MyFileUtils.getAppHeight();
+            isTouchScroll = false;
             postInvalidate();
             return true;
         }
 
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-            //Log.d(TAG,"onscroll"+"distancex ="+distanceX+"distancey ="+distanceY);
-            //Log.d(TAG,"onscroll +e1.x ="+e1.getX()+"e1.y="+e1.getY()+"e2.x="+e2.getX()+"e2.y="+e2.getY());
+            //Log.d(TAG,"MyGestureDetector onscroll"+"distancex ="+distanceX+"distancey ="+distanceY);
+            Log.d(TAG,"MyGestureDetector onscroll +e1.x ="+e1.getX()+"e1.y="+e1.getY());
+            Log.d(TAG,"MyGestureDetector onscroll +e2.x="+e2.getX()+"e2.y="+e2.getY());
             touchPointX = e2.getX();
             touchPointY = e2.getY();
+            drawTurnPageAnimation(cacheCanvas);
             isTouchScroll = true;
             postInvalidate();
-            //isTouchScroll = true;
             return true;
         }
 
@@ -624,10 +640,13 @@ public class MyCustomView extends View {
 
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
-            Log.d(TAG,"onSingleTapUp "+ e.toString());
+            Log.d(TAG,"MyGestureDetector onSingleTapUp "+ e.toString());
             popWindowHandler(e);
             return true;
         }
+
+
+
     }
 
     @Override
