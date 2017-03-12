@@ -16,6 +16,7 @@ import android.graphics.Region;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GestureDetectorCompat;
+import android.text.method.MovementMethod;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -36,6 +37,7 @@ import android.widget.TextView;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -83,6 +85,20 @@ public class MyCustomView extends View {
     private  Bitmap cacheBitmap;
     private Canvas cacheCanvas;
 
+
+    private float tmpScrollX = -1;
+    //定义左右滑动方向。
+    private enum FlingDirection{
+        LEFT,RIGHT,NOTALL
+    };
+    private FlingDirection flingDirection;
+    //缓存方向变化的点
+    private List<Float> changeDirPoints = new ArrayList<Float>();
+    private enum TurnPageAnimDirection{
+        LEFT,RIGHT,NOTALL
+    };
+    //翻页方向
+    private TurnPageAnimDirection turnPageAnimDirection;
 
     private String nextPageContent;
 
@@ -161,17 +177,21 @@ public class MyCustomView extends View {
         super.onDraw(canvas);
         //int c = mPaint.getColor();
 
-        int currPageIndx = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter().getCurrPageNumIndx();
+        Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        int currPageIndx = currChapter.getCurrPageNumIndx();
+        int totalPageNum = currChapter.getPageTotal();
         if(isTouchScroll) {
             canvas.drawBitmap(cacheBitmap,0,0,mPaint);
         }
         else{
-            drawPageContent(canvas, mText,currPageIndx);
+            drawPageContent(canvas, mText,currPageIndx,totalPageNum);
         }
     }
 
-    private void drawTurnPageAnimation(Canvas canvas){
-        int currPageIndx = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter().getCurrPageNumIndx();
+    private void drawTurnNextPageAnimation(Canvas canvas){
+        Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        int currPageIndx = currChapter.getCurrPageNumIndx();
+        int totalPageNum = currChapter.getPageTotal();
         path.reset();
         pathTwo.reset();
 
@@ -235,7 +255,7 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipRect(0, 0, bx, by);
         canvas.clipPath(path, Region.Op.DIFFERENCE);
-        drawPageContent(canvas, mText,currPageIndx);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
         mPaint.setColor(mTextColor);
         Paint.Style style = mPaint.getStyle();
         mPaint.setStyle(Paint.Style.STROKE);
@@ -268,6 +288,7 @@ public class MyCustomView extends View {
         List<Integer> pageList = currChapter.getPageNumList();
         String content = "";
         int nextPageIndx;
+        int totalPageNum;
         //如果当前页是本章最后一页
         if(currPageIndx == currChapter.getPageNumList().size() -1){
             Chapter nextChapter = mb.getNextChapter();
@@ -282,16 +303,18 @@ public class MyCustomView extends View {
             //获取下章第一页内容
             content = nextChapter.getContent().substring(0,nextChapter.getPageNumList().get(0));
             nextPageIndx = 0;
+            totalPageNum = nextChapter.getPageTotal();
         }
         else{
             content = currChapter.getContent().substring(pageList.get(currPageIndx),pageList.get(currPageIndx+1));
             nextPageIndx = currPageIndx + 1;
+            totalPageNum = currChapter.getPageTotal();
         }
 
-        drawPageContent(canvas,content,nextPageIndx);
+        drawPageContent(canvas,content,nextPageIndx,totalPageNum);
     }
 
-    private void drawPageContent(Canvas canvas,String content,int currPageIndx){
+    private void drawPageContent(Canvas canvas,String content,int currPageIndx,int totalPageNum){
         //mPaint.setColor(Color.WHITE);
         //canvas.drawRect(mRound,mPaint);
         mPaint.setColor(mTextColor);
@@ -317,13 +340,13 @@ public class MyCustomView extends View {
         //content = content.substring(pageEndIndx,content.length());
         //Log.d(TAG,"pageEndIndx = "+pageEndIndx);
         //mb.getCurrChapter().getPageNumList()
-        drawPageIndx(chapter,canvas);
+        drawPageIndx(chapter,canvas,currPageIndx+1,totalPageNum);
     }
 
-    private void drawPageIndx(Chapter chapter,Canvas canvas){
+    private void drawPageIndx(Chapter chapter,Canvas canvas,int currPageIndx,int totalPageNum){
         mPaint.setTextSize(pageIndxSize);
-        int currPageIndx = chapter.getCurrPageNumIndx()+1;
-        int totalPageNum = chapter.getPageTotal();
+        //int currPageIndx = chapter.getCurrPageNumIndx()+1;
+        //int totalPageNum = chapter.getPageTotal();
         float pageIndxY = MyFileUtils.getDisplayMetrics().heightPixels - pageIndxSize;
         canvas.drawText(currPageIndx+"/"+totalPageNum,this.txtTopXStart,pageIndxY,mPaint);
     }
@@ -589,11 +612,15 @@ public class MyCustomView extends View {
         private float currTime;
         @Override
         public boolean onDown(MotionEvent e) {
-            Log.d(TAG,"MyGestureDetector ondown "+e.toString());
-            xDown = e.getX();
-            yDown = e.getY();
-            Log.d(TAG,"xdown ="+xDown+" ydown ="+yDown);
-            currTime = System.currentTimeMillis();
+            //首先初始化
+            tmpScrollX = -1 ;
+            flingDirection = FlingDirection.NOTALL;
+            changeDirPoints.clear();//action_up先于onfling执行，所以不能在action_up中清空。
+            turnPageAnimDirection = TurnPageAnimDirection.NOTALL;
+
+            tmpScrollX = e.getX();
+            changeDirPoints.add(e.getX());
+            Log.d(TAG,"MyGestureDetector ondown e.getX()="+tmpScrollX);
             return true;
         }
 
@@ -604,32 +631,93 @@ public class MyCustomView extends View {
             yFling = e2.getY();
             //Log.d(TAG,"xfling ="+xFling+" yFling ="+yFling);
             int slop = ViewConfiguration.get(BookshelfApp.getBookshelfApp()).getScaledTouchSlop();
-            //Log.d(TAG,"touchslop = "+slop);
-            if(xFling - xDown > 0 && Math.abs(xFling - xDown) > slop){
-                Log.d(TAG,"turnPrevPage");
-                turnPrevPage();
+//            Log.d(TAG,"touchslop = "+slop);
+//            if(xFling - xDown > 0 && Math.abs(xFling - xDown) > slop){
+//                Log.d(TAG,"turnPrevPage");
+//                turnPrevPage();
+//            }
+//            else if(xFling - xDown < 0 && Math.abs(xFling - xDown) > slop){
+//                Log.d(TAG,"turnNextPage");
+//                turnNextPage();
+//            }
+
+            //需要把滑动的最后一个点加入，可能该点并未改变方向。
+            changeDirPoints.add(e2.getX());
+            Log.d(TAG,"MyGestureDetector onFling changedirpoints.size= "+changeDirPoints.size());
+            float x1 = changeDirPoints.get(changeDirPoints.size() - 1);
+            float x2 = changeDirPoints.get(changeDirPoints.size() - 2);
+            Log.d(TAG,"MyGestureDetector onFling x1= "+x1+" x2="+x2+" slop="+slop);
+            if(x1 - x2 > 0 && Math.abs(x1 - x2) > slop){
+                flingDirection = FlingDirection.RIGHT;
             }
-            else if(xFling - xDown < 0 && Math.abs(xFling - xDown) > slop){
-                Log.d(TAG,"turnNextPage");
+            else if(x1 - x2 < 0 && Math.abs(x1 - x2) > slop){
+                flingDirection = FlingDirection.LEFT;
+
+            }
+            else{
+                flingDirection = FlingDirection.NOTALL;
+            }
+
+            //翻书方向跟滑动方向不一致，不翻书。
+            if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
                 turnNextPage();
             }
-            touchPointX = MyFileUtils.getAppWidth();
-            touchPointY = MyFileUtils.getAppHeight();
-            isTouchScroll = false;
-            postInvalidate();
+            else if(flingDirection == FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+                turnPrevPage();
+            }
+
             return true;
         }
 
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
             //Log.d(TAG,"MyGestureDetector onscroll"+"distancex ="+distanceX+"distancey ="+distanceY);
-            Log.d(TAG,"MyGestureDetector onscroll +e1.x ="+e1.getX()+"e1.y="+e1.getY());
-            Log.d(TAG,"MyGestureDetector onscroll +e2.x="+e2.getX()+"e2.y="+e2.getY());
-            touchPointX = e2.getX();
-            touchPointY = e2.getY();
-            drawTurnPageAnimation(cacheCanvas);
-            isTouchScroll = true;
-            postInvalidate();
+            Log.d(TAG,"MyGestureDetector onscroll +e1.x ="+e1.getX()+"   e1.y="+e1.getY());
+            Log.d(TAG,"MyGestureDetector onscroll +e2.x="+e2.getX()+"    e2.y="+e2.getY());
+
+
+            if (e2.getX() > tmpScrollX) {
+                tmpScrollX = e2.getX();
+                if (flingDirection != FlingDirection.RIGHT) {
+                    Log.d(TAG, "MyGestureDetector onscroll FlingDirection.RIGHT e2.getX()=" + e2.getX());
+                    changeDirPoints.add(e2.getX());
+                    flingDirection = FlingDirection.RIGHT;
+                }
+            } else if (e2.getX() < tmpScrollX) {
+                tmpScrollX = e2.getX();
+                if (flingDirection != FlingDirection.LEFT) {
+                    Log.d(TAG, "MyGestureDetector onscroll FlingDirection.LEFT e2.getX()=" + e2.getX());
+                    changeDirPoints.add(e2.getX());
+                    flingDirection = FlingDirection.LEFT;
+                }
+
+            }
+
+            if(changeDirPoints.size() == 2){
+                if(flingDirection == FlingDirection.LEFT){
+                    turnPageAnimDirection = TurnPageAnimDirection.LEFT;
+                }
+                else if(flingDirection == FlingDirection.RIGHT){
+                    turnPageAnimDirection = TurnPageAnimDirection.RIGHT;
+                }
+//                else if(flingDirection == FlingDirection.RIGHT){
+//                    touchPointX = e2.getX();
+//                    touchPointY = e2.getY();
+//                    drawTurnPrevPageAnimation();
+//                    isTouchScroll = true;
+//                    postInvalidate();
+//                }
+            }
+            //往左翻下一页
+            if(turnPageAnimDirection == TurnPageAnimDirection.LEFT){
+                Log.d(TAG,"MyGestureDetector onscroll,Left anim, e2.getX()= "+e2.getX());
+                touchPointX = e2.getX();
+                touchPointY = e2.getY();
+                drawTurnNextPageAnimation(cacheCanvas);
+                isTouchScroll = true;
+                postInvalidate();
+            }
+
             return true;
         }
 
@@ -651,6 +739,17 @@ public class MyCustomView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        switch(event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+            break;
+            case MotionEvent.ACTION_UP:
+                Log.d(TAG,"onTouchEvent action up");
+                touchPointX = MyFileUtils.getAppWidth();
+                touchPointY = MyFileUtils.getAppHeight();
+                isTouchScroll = false;
+                postInvalidate();
+                break;
+        }
         return gestureDetectorCompat.onTouchEvent(event);
 //        return super.onTouchEvent(event);
     }
