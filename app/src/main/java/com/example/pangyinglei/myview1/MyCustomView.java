@@ -9,6 +9,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
@@ -85,6 +88,9 @@ public class MyCustomView extends View {
     private  Bitmap cacheBitmap;
     private Canvas cacheCanvas;
 
+    //背面字符的颜色矩阵
+    private ColorFilter backColorFilter;
+
 
     private float tmpScrollX = -1;
     //定义左右滑动方向。
@@ -157,6 +163,14 @@ public class MyCustomView extends View {
         cacheCanvas = new Canvas();
         cacheCanvas.setBitmap(cacheBitmap);
 
+        float[] colorMatrix = new float[]{
+                1,0,0,0,0,
+                0,1,0,0,0,
+                0,0,1,0,0,
+                0,0,0,0.2f,0
+        };
+        backColorFilter = new ColorMatrixColorFilter(colorMatrix);
+
         //Paint.FontMetrics fm = mPaint.getFontMetrics();
         //Log.d(TAG,"mText.length = "+mText.length());
         gestureDetectorCompat = new GestureDetectorCompat(BookshelfApp.getBookshelfApp(),new MyGestureDetector());
@@ -180,12 +194,13 @@ public class MyCustomView extends View {
         Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
-        if(isTouchScroll) {
-            canvas.drawBitmap(cacheBitmap,0,0,mPaint);
+        if (isTouchScroll) {
+            canvas.drawBitmap(cacheBitmap, 0, 0, mPaint);
+        } else {
+            drawPageContent(canvas, mText, currPageIndx, totalPageNum);
         }
-        else{
-            drawPageContent(canvas, mText,currPageIndx,totalPageNum);
-        }
+
+
     }
 
     private void drawTurnNextPageAnimation(Canvas canvas){
@@ -270,13 +285,41 @@ public class MyCustomView extends View {
         pathTwo.lineTo(kx, ky);
         pathTwo.close();
 
+        //画下一页
         canvas.save();
         canvas.clipPath(pathTwo);
         canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
-        //drawPageContent(canvas,mText);
         drawNextPageContent(canvas);
         canvas.drawLine(jx, jy, kx, ky, mPaint);
         canvas.restore();
+
+        //画背面
+        ColorFilter colorFilter = mPaint.getColorFilter();
+        canvas.save();
+        canvas.clipPath(pathTwo);
+        canvas.clipPath(path,Region.Op.INTERSECT);
+        Matrix matrix = new Matrix();
+        float mk = (touchPointX - bx)/(by - touchPointY);
+        float mb = (touchPointY+by)/2 - mk * (touchPointX + bx)/2;
+        float ksqr = mk * mk;
+        float x1 = (1- ksqr)/(ksqr + 1);
+        float x2 = (2*mk)/(ksqr + 1);
+        float x3 = (-2 * mb * mk)/(ksqr + 1);
+        float x4 = (2 * mk)/(ksqr + 1);
+        float x5 = (ksqr - 1)/(ksqr + 1);
+        float x6 = (1 - ksqr) * mb / (ksqr + 1) + mb;
+        float[] values = new float[]{
+          x1,x2,x3,x4,x5,x6,0,0,1
+        };
+        Log.d(TAG,"mk = "+mk+" mb = "+mb+" x1="+x1+" x2="+x2+" x3="+x3);
+        Log.d(TAG,"x4="+x4+" x5="+x5+" x6="+x6);
+        matrix.setValues(values);
+        canvas.setMatrix(matrix);
+        mPaint.setColorFilter(backColorFilter);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        canvas.restore();
+        mPaint.setColorFilter(colorFilter);
+
 
         isTouchScroll = false;
     }
@@ -710,12 +753,12 @@ public class MyCustomView extends View {
             }
             //往左翻下一页
             if(turnPageAnimDirection == TurnPageAnimDirection.LEFT){
-                Log.d(TAG,"MyGestureDetector onscroll,Left anim, e2.getX()= "+e2.getX());
                 touchPointX = e2.getX();
                 touchPointY = e2.getY();
                 drawTurnNextPageAnimation(cacheCanvas);
+                Log.d(TAG,"MyGestureDetector onscroll,Left anim, e2.getX()= "+e2.getX());
                 isTouchScroll = true;
-                postInvalidate();
+                invalidate();
             }
 
             return true;
@@ -739,19 +782,21 @@ public class MyCustomView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+
+        boolean isDetector =  gestureDetectorCompat.onTouchEvent(event);
+//        return super.onTouchEvent(event);
         switch(event.getAction()){
             case MotionEvent.ACTION_DOWN:
-            break;
+                break;
             case MotionEvent.ACTION_UP:
                 Log.d(TAG,"onTouchEvent action up");
                 touchPointX = MyFileUtils.getAppWidth();
                 touchPointY = MyFileUtils.getAppHeight();
                 isTouchScroll = false;
-                postInvalidate();
+                invalidate();
                 break;
         }
-        return gestureDetectorCompat.onTouchEvent(event);
-//        return super.onTouchEvent(event);
+        return isDetector;
     }
 
     //    @Override
