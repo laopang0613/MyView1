@@ -7,16 +7,22 @@ import android.content.Intent;
 import android.content.res.TypedArray;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.LinearGradient;
+import android.graphics.MaskFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GestureDetectorCompat;
 import android.text.method.MovementMethod;
@@ -83,6 +89,10 @@ public class MyCustomView extends View {
     private float touchPointY;
     private Path path = new Path();
     private Path pathTwo = new Path();
+
+    //画阴影
+    private Path pathThree = new Path();
+    private ColorFilter shadowColorFilter;
 
     //使用双缓冲避免闪烁，定义内存的图片。
     private  Bitmap cacheBitmap;
@@ -171,6 +181,12 @@ public class MyCustomView extends View {
         };
         backColorFilter = new ColorMatrixColorFilter(colorMatrix);
 
+        shadowColorFilter = new ColorMatrixColorFilter(new float[]{
+                0.1f,0,0,0,0,
+                0,0.1f,0,0,0,
+                0,0,0.1f,0,0,
+                0,0,0,0.2f,0
+        });
         //Paint.FontMetrics fm = mPaint.getFontMetrics();
         //Log.d(TAG,"mText.length = "+mText.length());
         gestureDetectorCompat = new GestureDetectorCompat(BookshelfApp.getBookshelfApp(),new MyGestureDetector());
@@ -209,6 +225,7 @@ public class MyCustomView extends View {
         int totalPageNum = currChapter.getPageTotal();
         path.reset();
         pathTwo.reset();
+        pathThree.reset();
 
         //先刷一层背景色。
         int color = mPaint.getColor();
@@ -318,6 +335,59 @@ public class MyCustomView extends View {
         mPaint.setColorFilter(backColorFilter);
         drawPageContent(canvas, mText,currPageIndx,totalPageNum);
         canvas.restore();
+
+        //画阴影
+        Shader shader = mPaint.getShader();
+        int alpha = mPaint.getAlpha();
+        mPaint.setColorFilter(colorFilter);
+        mPaint.setAlpha(100);
+        int s = 18;
+        float lx = bx + (bx - touchPointX)/s;
+        float ly = by + (by - touchPointY)/s;
+        LinearGradient linearGradient1 = new LinearGradient(0,by,0,ly,new int[]{Color.BLACK,Color.WHITE},
+                null, Shader.TileMode.CLAMP);
+        LinearGradient linearGradient2 = new LinearGradient(bx,0,lx,0,new int[]{Color.BLACK,Color.WHITE},
+                null,Shader.TileMode.CLAMP);
+
+        float a1x = touchPointX - (bx - touchPointX)/s;
+        float a1y = touchPointY - (by - touchPointY)/s;
+        float c1x = cx - (bx - cx)/s;
+        float c1y = by;
+        float d1x = bx;
+        float d1y = dy - (by - dy)/s;
+
+        //左上阴影
+        pathThree.moveTo(a1x,a1y);
+        pathThree.lineTo(c1x,c1y);
+        pathThree.lineTo(bx,by);
+        //pathThree.lineTo(d1x,d1y);
+        pathThree.close();
+        canvas.save();
+        canvas.clipPath(pathThree);
+        canvas.clipPath(path,Region.Op.DIFFERENCE);
+//        GradientDrawable gradientDrawable1 = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+//                new int[]{Color.BLACK,Color.WHITE});
+        canvas.setMatrix(matrix);
+        mPaint.setShader(linearGradient1);
+        canvas.drawRect(0,by,lx,ly,mPaint);
+        canvas.restore();
+
+        //右上阴影。
+        pathThree.reset();
+        pathThree.moveTo(a1x,a1y);
+        pathThree.lineTo(d1x,d1y);
+        pathThree.lineTo(bx,by);
+        canvas.save();
+        canvas.clipPath(pathThree);
+        canvas.clipPath(path,Region.Op.DIFFERENCE);
+        canvas.setMatrix(matrix);
+        mPaint.setShader(linearGradient2);
+        canvas.drawRect(bx,0,lx,ly,mPaint);
+        canvas.restore();
+
+        mPaint.setShader(shader);
+        mPaint.setAlpha(alpha);
+
         mPaint.setColorFilter(colorFilter);
 
 
