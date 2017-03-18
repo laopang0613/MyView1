@@ -341,7 +341,7 @@ public class MyCustomView extends View {
         int alpha = mPaint.getAlpha();
         mPaint.setColorFilter(colorFilter);
         mPaint.setAlpha(100);
-        int s = 18;
+        int s = 12;
         float lx = bx + (bx - touchPointX)/s;
         float ly = by + (by - touchPointY)/s;
         LinearGradient linearGradient1 = new LinearGradient(0,by,0,ly,new int[]{Color.BLACK,Color.WHITE},
@@ -385,9 +385,39 @@ public class MyCustomView extends View {
         canvas.drawRect(bx,0,lx,ly,mPaint);
         canvas.restore();
 
+        //底部阴影
+        double width = Math.sqrt((bx - touchPointX)*(bx - touchPointX) + (by - touchPointY)*(by - touchPointY))/4;
+        double height = Math.sqrt((hx -ix)*(hx - ix)+(hy - iy)*(hy - iy));
+        LinearGradient linearGradient3 = new LinearGradient(0,0,(float)width,0,new int[]{Color.BLACK,Color.BLACK,Color.WHITE},
+                null,Shader.TileMode.CLAMP);
+        double tanValue = Math.abs(fx - gx)/Math.abs(fy - gy);
+        double angle = Math.toDegrees(Math.atan(tanValue));
+        Log.d(TAG,"angle ="+angle+"width ="+width+"height="+height);
+        path.reset();
+        path.moveTo(hx,hy);
+        path.quadTo(cx,cy,fx,fy);
+        path.lineTo(gx,gy);
+        path.quadTo(dx,dy,ix,iy);
+        path.lineTo(dx,dy);
+        path.lineTo(cx,cy);
+        path.close();
+        pathThree.reset();
+        pathThree.moveTo(jx,jy);
+        pathThree.lineTo(touchPointX,touchPointY);
+        pathThree.lineTo(kx,ky);
+        pathThree.close();
+        canvas.save();
+        canvas.clipPath(pathThree);
+        canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+        canvas.translate(ix,iy);
+        canvas.rotate((float)angle);
+        mPaint.setShader(linearGradient3);
+        canvas.drawRect(0,0,(float)width,(float)height,mPaint);
+
+        canvas.restore();
+
         mPaint.setShader(shader);
         mPaint.setAlpha(alpha);
-
         mPaint.setColorFilter(colorFilter);
 
 
