@@ -116,6 +116,12 @@ public class MyCustomView extends View {
     //翻页方向
     private TurnPageAnimDirection turnPageAnimDirection;
 
+    //定义翻页起始位置
+    private enum TurnPageStartPos{
+        UP,MIDDLE,DOWN,NOTALL
+    }
+    private TurnPageStartPos turnPageStartPos = TurnPageStartPos.NOTALL;
+
     private String nextPageContent;
 
 
@@ -159,8 +165,8 @@ public class MyCustomView extends View {
     private void init(){
         int mWidth = MyFileUtils.getAppWidth();
         int mHeight = MyFileUtils.getAppHeight();
-        touchPointX = mWidth;
-        touchPointY = mHeight;
+//        touchPointX = mWidth;
+//        touchPointY = mHeight;
 
         mPaint = new Paint();
         mPaint.setTextSize(mTextSize);
@@ -211,6 +217,7 @@ public class MyCustomView extends View {
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
         if (isTouchScroll) {
+            Log.d(TAG,"ondraw cacheBitmap");
             canvas.drawBitmap(cacheBitmap, 0, 0, mPaint);
         } else {
             drawPageContent(canvas, mText, currPageIndx, totalPageNum);
@@ -219,7 +226,218 @@ public class MyCustomView extends View {
 
     }
 
-    private void drawTurnNextPageAnimation(Canvas canvas){
+    private void drawTurnNextPageAnimationUp(Canvas canvas){
+        Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        int currPageIndx = currChapter.getCurrPageNumIndx();
+        int totalPageNum = currChapter.getPageTotal();
+        int viewWidth = MyFileUtils.getAppWidth();
+        int viewHeight = MyFileUtils.getAppHeight();
+        path.reset();
+        pathTwo.reset();
+        pathThree.reset();
+
+        //先刷一层背景色。
+        int color = mPaint.getColor();
+        mPaint.setColor(Color.WHITE);
+        canvas.drawRect(0,0,viewWidth,viewHeight,mPaint);
+        mPaint.setColor(color);
+
+        float bx, by;
+        float cx, cy;
+        float dx, dy;
+        float ex, ey;
+        float fx, fy;
+        float gx, gy;
+        float hx, hy;
+        float ix, iy;
+        float jx, jy;
+        float kx, ky;
+
+        Log.d(TAG,"touchPointX ="+touchPointX+" touchPointY="+touchPointY);
+        bx = MyFileUtils.getAppWidth();
+        by = 0;
+        Log.d(TAG, "bx =" + bx + " by=" + by);
+        ex = (touchPointX + bx) / 2;
+        ey = (touchPointY + by) / 2;
+        Log.d(TAG, "ex =" + ex + " ey =" + ey);
+        cx = bx;
+        cy = ey + (bx - ex)*(bx - ex)/(ey - by);
+        Log.d(TAG, "cx =" + cx + " cy=" + cy);
+        dx = ex - (ey - by) * (ey - by)/(bx - ex);
+        dy = by;
+        Log.d(TAG, "dx =" + dx + " dy =" + dy);
+        fx = (cx + touchPointX) / 2;
+        fy = (cy + touchPointY) / 2;
+        Log.d(TAG, "fx =" + fx + " fy=" + fy);
+        gx = (touchPointX + dx) / 2;
+        gy = (touchPointY + dy) / 2;
+        Log.d(TAG, "gx =" + gx + " gy=" + gy);
+        hx = bx;
+        hy = (cy - by) / 2 * 3;
+        Log.d(TAG, "hx =" + hx + " hy=" + hy);
+        ix = dx - (bx - dx)/2;
+        iy = by;
+        Log.d(TAG, "ix =" + ix + " iy=" + iy);
+        jx = ((cx + hx) / 2 + (cx + fx) / 2) / 2;
+        jy = ((cy + hy) / 2 + (cy + fy) / 2) / 2;
+        Log.d(TAG, "jx=" + jx + " jy=" + jy);
+        kx = ((gx + dx) / 2 + (ix + dx) / 2) / 2;
+        ky = ((gy + dy) / 2 + (iy + dy) / 2) / 2;
+        Log.d(TAG, "kx=" + kx + " ky=" + ky);
+
+        path.moveTo(hx, hy);
+        path.quadTo(cx, cy, fx, fy);
+        path.lineTo(touchPointX, touchPointY);
+        path.lineTo(gx, gy);
+        path.quadTo(dx, dy, ix, iy);
+        path.lineTo(bx, by);
+        path.close();
+
+        canvas.save();
+        canvas.clipRect(0, 0, viewWidth, viewHeight);
+        canvas.clipPath(path, Region.Op.DIFFERENCE);
+        Log.d(TAG,"ondraw mText.size()" + mText.length());
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        mPaint.setColor(mTextColor);
+        Paint.Style style = mPaint.getStyle();
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeWidth(3);
+        mPaint.setAntiAlias(false);
+        canvas.drawPath(path, mPaint);
+        canvas.restore();
+
+        mPaint.setStyle(style);
+        pathTwo.moveTo(jx, jy);
+        pathTwo.lineTo(touchPointX, touchPointY);
+        pathTwo.lineTo(kx, ky);
+        pathTwo.close();
+
+        //画下一页
+        canvas.save();
+        canvas.clipPath(pathTwo);
+        canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+        drawNextPageContent(canvas);
+        canvas.drawLine(jx, jy, kx, ky, mPaint);
+        canvas.restore();
+
+        //画背面
+        ColorFilter colorFilter = mPaint.getColorFilter();
+        canvas.save();
+        canvas.clipPath(pathTwo);
+        canvas.clipPath(path,Region.Op.INTERSECT);
+        Matrix matrix = new Matrix();
+        float mk = (touchPointX - bx)/(by - touchPointY);
+        float mb = (touchPointY+by)/2 - mk * (touchPointX + bx)/2;
+        float ksqr = mk * mk;
+        float x1 = (1- ksqr)/(ksqr + 1);
+        float x2 = (2*mk)/(ksqr + 1);
+        float x3 = (-2 * mb * mk)/(ksqr + 1);
+        float x4 = (2 * mk)/(ksqr + 1);
+        float x5 = (ksqr - 1)/(ksqr + 1);
+        //float x6 = (1 - ksqr) * mb / (ksqr + 1) + mb;
+        float x6 = 2*mb/(ksqr+1);
+        float[] values = new float[]{
+                x1,x2,x3,x4,x5,x6,0,0,1
+        };
+        Log.d(TAG,"mk = "+mk+" mb = "+mb+" x1="+x1+" x2="+x2+" x3="+x3);
+        Log.d(TAG,"x4="+x4+" x5="+x5+" x6="+x6);
+        matrix.setValues(values);
+        canvas.setMatrix(matrix);
+        mPaint.setColorFilter(backColorFilter);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        canvas.restore();
+
+        //画阴影
+        Shader shader = mPaint.getShader();
+        int alpha = mPaint.getAlpha();
+        mPaint.setColorFilter(colorFilter);
+        mPaint.setAlpha(100);
+        int s = 12;
+        float lx = bx + (bx - touchPointX)/s;
+        float ly = by + (by - touchPointY)/s;
+        LinearGradient linearGradient1 = new LinearGradient(0,by,0,ly,new int[]{Color.BLACK,Color.WHITE},
+                null, Shader.TileMode.CLAMP);
+        LinearGradient linearGradient2 = new LinearGradient(bx,0,lx,0,new int[]{Color.BLACK,Color.WHITE},
+                null,Shader.TileMode.CLAMP);
+
+        float a1x = touchPointX - (bx - touchPointX)/s;
+        float a1y = touchPointY - (by - touchPointY)/s;
+        float c1x = cx;
+        float c1y = cy + (cy - by)/s;
+        float d1x = dx - (bx -dx)/s;
+        float d1y = by;
+
+        //左上阴影
+        pathThree.moveTo(a1x,a1y);
+        pathThree.lineTo(d1x,d1y);
+        pathThree.lineTo(bx,by);
+        //pathThree.lineTo(d1x,d1y);
+        pathThree.close();
+        canvas.save();
+        canvas.clipPath(pathThree);
+        canvas.clipPath(path,Region.Op.DIFFERENCE);
+//        GradientDrawable gradientDrawable1 = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+//                new int[]{Color.BLACK,Color.WHITE});
+        canvas.setMatrix(matrix);
+        mPaint.setShader(linearGradient1);
+        canvas.drawRect(0,0,lx,ly,mPaint);
+        canvas.restore();
+
+        //左下阴影。
+        pathThree.reset();
+        pathThree.moveTo(a1x,a1y);
+        pathThree.lineTo(c1x,c1y);
+        pathThree.lineTo(bx,by);
+        canvas.save();
+        canvas.clipPath(pathThree);
+        canvas.clipPath(path,Region.Op.DIFFERENCE);
+        canvas.setMatrix(matrix);
+        mPaint.setShader(linearGradient2);
+        canvas.drawRect(bx,ly,lx,viewHeight,mPaint);
+        canvas.restore();
+
+        //右边底部阴影
+        double width = Math.sqrt((bx - touchPointX)*(bx - touchPointX) + (by - touchPointY)*(by - touchPointY))/4;
+        double height = Math.sqrt((hx -ix)*(hx - ix)+(hy - iy)*(hy - iy));
+        LinearGradient linearGradient3 = new LinearGradient(0,0,(float)width,0,new int[]{Color.BLACK,Color.BLACK,Color.WHITE},
+                null,Shader.TileMode.CLAMP);
+        //double tanValue = Math.abs(fx - gx)/Math.abs(fy - gy);
+        double tanValue = (bx - ix) / (hy - by);
+        double angle = Math.toDegrees(Math.atan(tanValue)) * (-1);
+        Log.d(TAG,"angle ="+angle+"width ="+width+"height="+height);
+        path.reset();
+        path.moveTo(hx,hy);
+        path.quadTo(cx,cy,fx,fy);
+        path.lineTo(gx,gy);
+        path.quadTo(dx,dy,ix,iy);
+        path.lineTo(dx,dy);
+        path.lineTo(cx,cy);
+        path.close();
+        pathThree.reset();
+        pathThree.moveTo(jx,jy);
+        pathThree.lineTo(touchPointX,touchPointY);
+        pathThree.lineTo(kx,ky);
+        pathThree.close();
+        canvas.save();
+        canvas.clipPath(pathThree);
+        canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+        canvas.translate(ix,iy);
+        canvas.rotate((float)angle);
+        mPaint.setShader(linearGradient3);
+        canvas.drawRect(0,0,(float)width,(float)height,mPaint);
+
+        canvas.restore();
+
+        mPaint.setShader(shader);
+        mPaint.setAlpha(alpha);
+        mPaint.setColorFilter(colorFilter);
+
+
+        isTouchScroll = false;
+    }
+
+    private void drawTurnNextPageAnimationDown(Canvas canvas){
+
         Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
@@ -246,6 +464,7 @@ public class MyCustomView extends View {
 
         bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
         by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+
 
         //Log.d(TAG, "bx =" + bx + " by=" + by);
         ex = (touchPointX + bx) / 2;
@@ -324,7 +543,8 @@ public class MyCustomView extends View {
         float x3 = (-2 * mb * mk)/(ksqr + 1);
         float x4 = (2 * mk)/(ksqr + 1);
         float x5 = (ksqr - 1)/(ksqr + 1);
-        float x6 = (1 - ksqr) * mb / (ksqr + 1) + mb;
+        //float x6 = (1 - ksqr) * mb / (ksqr + 1) + mb;
+        float x6 = 2*mb/(ksqr+1);
         float[] values = new float[]{
           x1,x2,x3,x4,x5,x6,0,0,1
         };
@@ -335,11 +555,11 @@ public class MyCustomView extends View {
         mPaint.setColorFilter(backColorFilter);
         drawPageContent(canvas, mText,currPageIndx,totalPageNum);
         canvas.restore();
+        mPaint.setColorFilter(colorFilter);
 
         //画阴影
         Shader shader = mPaint.getShader();
         int alpha = mPaint.getAlpha();
-        mPaint.setColorFilter(colorFilter);
         mPaint.setAlpha(100);
         int s = 12;
         float lx = bx + (bx - touchPointX)/s;
@@ -390,7 +610,8 @@ public class MyCustomView extends View {
         double height = Math.sqrt((hx -ix)*(hx - ix)+(hy - iy)*(hy - iy));
         LinearGradient linearGradient3 = new LinearGradient(0,0,(float)width,0,new int[]{Color.BLACK,Color.BLACK,Color.WHITE},
                 null,Shader.TileMode.CLAMP);
-        double tanValue = Math.abs(fx - gx)/Math.abs(fy - gy);
+        //double tanValue = Math.abs(fx - gx)/Math.abs(fy - gy);
+        double tanValue = (bx - hx)/(by - iy);
         double angle = Math.toDegrees(Math.atan(tanValue));
         Log.d(TAG,"angle ="+angle+"width ="+width+"height="+height);
         path.reset();
@@ -418,7 +639,6 @@ public class MyCustomView extends View {
 
         mPaint.setShader(shader);
         mPaint.setAlpha(alpha);
-        mPaint.setColorFilter(colorFilter);
 
 
         isTouchScroll = false;
@@ -756,6 +976,8 @@ public class MyCustomView extends View {
         @Override
         public boolean onDown(MotionEvent e) {
             //首先初始化
+            touchPointX = e.getX();
+            touchPointY = e.getY();
             tmpScrollX = -1 ;
             flingDirection = FlingDirection.NOTALL;
             changeDirPoints.clear();//action_up先于onfling执行，所以不能在action_up中清空。
@@ -851,11 +1073,45 @@ public class MyCustomView extends View {
 //                    postInvalidate();
 //                }
             }
+            int height = MyFileUtils.getAppHeight();
             //往左翻下一页
             if(turnPageAnimDirection == TurnPageAnimDirection.LEFT){
                 touchPointX = e2.getX();
                 touchPointY = e2.getY();
-                drawTurnNextPageAnimation(cacheCanvas);
+                if(turnPageStartPos == TurnPageStartPos.NOTALL){
+                    Log.d(TAG,"TurnPageStartPos.NOTALL");
+                    if(touchPointY > height*2/3) {
+                        Log.d(TAG,"TurnPageStartPos.DOWN first");
+                        turnPageStartPos = TurnPageStartPos.DOWN;
+                        drawTurnNextPageAnimationDown(cacheCanvas);
+                    }
+                    else if(touchPointY < height/3){
+                        Log.d(TAG,"TurnPageStartPos.UP fisrt");
+                        turnPageStartPos = TurnPageStartPos.UP;
+                        drawTurnNextPageAnimationUp(cacheCanvas);
+                    }
+                    else{
+                        Log.d(TAG,"TurnPageStartPos.OTHER fisrt");
+                        turnPageStartPos = TurnPageStartPos.MIDDLE;
+                        touchPointY = height - 1;
+                        drawTurnNextPageAnimationDown(cacheCanvas);
+                    }
+                }
+                else if(turnPageStartPos == TurnPageStartPos.DOWN){
+                    Log.d(TAG,"TurnPageStartPos.DOWN next");
+                    drawTurnNextPageAnimationDown(cacheCanvas);
+                }
+                else if(turnPageStartPos == TurnPageStartPos.UP){
+                    Log.d(TAG,"TurnPageStartPos.UP next");
+                    Log.d(TAG,"MyGestureDetector onscroll TurnPageStartPos.UP");
+                    drawTurnNextPageAnimationUp(cacheCanvas);
+                }
+                else{
+                    Log.d(TAG,"TurnPageStartPos.OTHER next");
+                    touchPointY = height - 1;
+                    drawTurnNextPageAnimationDown(cacheCanvas);
+                }
+
                 Log.d(TAG,"MyGestureDetector onscroll,Left anim, e2.getX()= "+e2.getX());
                 isTouchScroll = true;
                 invalidate();
@@ -890,10 +1146,17 @@ public class MyCustomView extends View {
                 break;
             case MotionEvent.ACTION_UP:
                 Log.d(TAG,"onTouchEvent action up");
-                touchPointX = MyFileUtils.getAppWidth();
-                touchPointY = MyFileUtils.getAppHeight();
+                if(turnPageStartPos == TurnPageStartPos.DOWN) {
+                    touchPointX = MyFileUtils.getAppWidth();
+                    touchPointY = MyFileUtils.getAppHeight();
+                }
+                else if(turnPageStartPos == TurnPageStartPos.UP){
+                    touchPointX = MyFileUtils.getAppWidth();
+                    touchPointY = 0;
+                }
                 isTouchScroll = false;
                 invalidate();
+                turnPageStartPos = TurnPageStartPos.NOTALL;
                 break;
         }
         return isDetector;
