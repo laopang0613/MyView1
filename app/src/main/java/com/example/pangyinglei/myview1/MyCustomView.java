@@ -214,13 +214,14 @@ public class MyCustomView extends View {
         //int c = mPaint.getColor();
 
         Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        String currChapterName = currChapter.getName();
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
         if (isTouchScroll) {
             Log.d(TAG,"ondraw cacheBitmap");
             canvas.drawBitmap(cacheBitmap, 0, 0, mPaint);
         } else {
-            drawPageContent(canvas, mText, currPageIndx, totalPageNum);
+            drawPageContent(canvas, mText, currPageIndx, totalPageNum,currChapterName);
         }
 
 
@@ -228,6 +229,7 @@ public class MyCustomView extends View {
 
     private void drawTurnNextPageAnimationUp(Canvas canvas){
         Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        String currChapterName = currChapter.getName();
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
         int viewWidth = MyFileUtils.getAppWidth();
@@ -297,7 +299,7 @@ public class MyCustomView extends View {
         canvas.clipRect(0, 0, viewWidth, viewHeight);
         canvas.clipPath(path, Region.Op.DIFFERENCE);
         Log.d(TAG,"ondraw mText.size()" + mText.length());
-        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
         mPaint.setColor(mTextColor);
         Paint.Style style = mPaint.getStyle();
         mPaint.setStyle(Paint.Style.STROKE);
@@ -344,7 +346,7 @@ public class MyCustomView extends View {
         matrix.setValues(values);
         canvas.setMatrix(matrix);
         mPaint.setColorFilter(backColorFilter);
-        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
         canvas.restore();
 
         //画阴影
@@ -439,6 +441,7 @@ public class MyCustomView extends View {
     private void drawTurnNextPageAnimationDown(Canvas canvas){
 
         Chapter currChapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+        String currChapterName = currChapter.getName();
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
         path.reset();
@@ -506,7 +509,7 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipRect(0, 0, bx, by);
         canvas.clipPath(path, Region.Op.DIFFERENCE);
-        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
         mPaint.setColor(mTextColor);
         Paint.Style style = mPaint.getStyle();
         mPaint.setStyle(Paint.Style.STROKE);
@@ -553,7 +556,7 @@ public class MyCustomView extends View {
         matrix.setValues(values);
         canvas.setMatrix(matrix);
         mPaint.setColorFilter(backColorFilter);
-        drawPageContent(canvas, mText,currPageIndx,totalPageNum);
+        drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
         canvas.restore();
         mPaint.setColorFilter(colorFilter);
 
@@ -652,6 +655,7 @@ public class MyCustomView extends View {
         String content = "";
         int nextPageIndx;
         int totalPageNum;
+        String chapterName;
         //如果当前页是本章最后一页
         if(currPageIndx == currChapter.getPageNumList().size() -1){
             Chapter nextChapter = mb.getNextChapter();
@@ -667,17 +671,19 @@ public class MyCustomView extends View {
             content = nextChapter.getContent().substring(0,nextChapter.getPageNumList().get(0));
             nextPageIndx = 0;
             totalPageNum = nextChapter.getPageTotal();
+            chapterName = nextChapter.getName();
         }
         else{
             content = currChapter.getContent().substring(pageList.get(currPageIndx),pageList.get(currPageIndx+1));
             nextPageIndx = currPageIndx + 1;
             totalPageNum = currChapter.getPageTotal();
+            chapterName = currChapter.getName();
         }
 
-        drawPageContent(canvas,content,nextPageIndx,totalPageNum);
+        drawPageContent(canvas,content,nextPageIndx,totalPageNum,chapterName);
     }
 
-    private void drawPageContent(Canvas canvas,String content,int currPageIndx,int totalPageNum){
+    private void drawPageContent(Canvas canvas,String content,int currPageIndx,int totalPageNum,String chapterName){
         //mPaint.setColor(Color.WHITE);
         //canvas.drawRect(mRound,mPaint);
         mPaint.setColor(mTextColor);
@@ -688,13 +694,13 @@ public class MyCustomView extends View {
             return;
         }
 
-        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
+//        Chapter chapter = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrChapter();
         if(currPageIndx == 0){
             //Log.d(TAG,"chapterPageIndx = "+ chapter.getCurrPageNumIndx()+" chaptertitle = "+chapter.getName());
-            drawBigChapterTitle(chapter.getName(),canvas);
+            drawBigChapterTitle(chapterName,canvas);
         }
         else{
-            drawLittleChapterTitle(chapter.getName(),canvas);
+            drawLittleChapterTitle(chapterName,canvas);
         }
         //Log.d(TAG,"content ="+content);
         mPaint.setTextSize(txtSize);
@@ -703,10 +709,10 @@ public class MyCustomView extends View {
         //content = content.substring(pageEndIndx,content.length());
         //Log.d(TAG,"pageEndIndx = "+pageEndIndx);
         //mb.getCurrChapter().getPageNumList()
-        drawPageIndx(chapter,canvas,currPageIndx+1,totalPageNum);
+        drawPageIndx(canvas,currPageIndx+1,totalPageNum);
     }
 
-    private void drawPageIndx(Chapter chapter,Canvas canvas,int currPageIndx,int totalPageNum){
+    private void drawPageIndx(Canvas canvas,int currPageIndx,int totalPageNum){
         mPaint.setTextSize(pageIndxSize);
         //int currPageIndx = chapter.getCurrPageNumIndx()+1;
         //int totalPageNum = chapter.getPageTotal();
