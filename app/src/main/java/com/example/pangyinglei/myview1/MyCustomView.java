@@ -1039,6 +1039,33 @@ public class MyCustomView extends View {
         return pageEndCharIndx;
     }
 
+    private void turnPageDone(){
+        int slop = ViewConfiguration.get(BookshelfApp.getBookshelfApp()).getScaledTouchSlop();
+//            Log.d(TAG,"touchslop = "+slop);
+        Log.d(TAG,"MyGestureDetector onFling changedirpoints.size= "+changeDirPoints.size());
+        float x1 = changeDirPoints.get(changeDirPoints.size() - 1);
+        float x2 = changeDirPoints.get(changeDirPoints.size() - 2);
+        Log.d(TAG,"MyGestureDetector onFling x1= "+x1+" x2="+x2+" slop="+slop);
+        if(x1 - x2 > 0 && Math.abs(x1 - x2) > slop){
+            flingDirection = FlingDirection.RIGHT;
+        }
+        else if(x1 - x2 < 0 && Math.abs(x1 - x2) > slop){
+            flingDirection = FlingDirection.LEFT;
+
+        }
+        else{
+            flingDirection = FlingDirection.NOTALL;
+        }
+
+        //翻书方向跟滑动方向不一致，不翻书。
+        if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
+            turnNextPage();
+        }
+        else if(flingDirection == FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+            turnPrevPage();
+        }
+    }
+
     public class MyGestureDetector extends GestureDetector.SimpleOnGestureListener{
         float xDown = 0,yDown = 0,xFling = 0,yFling = 0;
         private float currTime;
@@ -1061,45 +1088,6 @@ public class MyCustomView extends View {
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
             Log.d(TAG,"MyGestureDetector onfling"+e1.toString()+e2.toString()+"velocityx ="+velocityX+"velocityy="+velocityY);
-            xFling = e2.getX();
-            yFling = e2.getY();
-            //Log.d(TAG,"xfling ="+xFling+" yFling ="+yFling);
-            int slop = ViewConfiguration.get(BookshelfApp.getBookshelfApp()).getScaledTouchSlop();
-//            Log.d(TAG,"touchslop = "+slop);
-//            if(xFling - xDown > 0 && Math.abs(xFling - xDown) > slop){
-//                Log.d(TAG,"turnPrevPage");
-//                turnPrevPage();
-//            }
-//            else if(xFling - xDown < 0 && Math.abs(xFling - xDown) > slop){
-//                Log.d(TAG,"turnNextPage");
-//                turnNextPage();
-//            }
-
-            //需要把滑动的最后一个点加入，可能该点并未改变方向。
-            changeDirPoints.add(e2.getX());
-            Log.d(TAG,"MyGestureDetector onFling changedirpoints.size= "+changeDirPoints.size());
-            float x1 = changeDirPoints.get(changeDirPoints.size() - 1);
-            float x2 = changeDirPoints.get(changeDirPoints.size() - 2);
-            Log.d(TAG,"MyGestureDetector onFling x1= "+x1+" x2="+x2+" slop="+slop);
-            if(x1 - x2 > 0 && Math.abs(x1 - x2) > slop){
-                flingDirection = FlingDirection.RIGHT;
-            }
-            else if(x1 - x2 < 0 && Math.abs(x1 - x2) > slop){
-                flingDirection = FlingDirection.LEFT;
-
-            }
-            else{
-                flingDirection = FlingDirection.NOTALL;
-            }
-
-            //翻书方向跟滑动方向不一致，不翻书。
-            if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
-                turnNextPage();
-            }
-            else if(flingDirection == FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
-                turnPrevPage();
-            }
-
             return true;
         }
 
@@ -1221,6 +1209,10 @@ public class MyCustomView extends View {
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_UP:
+                //需要把滑动的最后一个点加入，可能该点并未改变方向。
+                changeDirPoints.add(event.getX());
+                //翻页
+                turnPageDone();
                 Log.d(TAG,"onTouchEvent action up");
                 if(turnPageStartPos == TurnPageStartPos.DOWN) {
                     touchPointX = MyFileUtils.getAppWidth();
