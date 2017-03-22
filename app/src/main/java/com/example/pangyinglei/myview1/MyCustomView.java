@@ -509,7 +509,13 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipRect(0, 0, bx, by);
         canvas.clipPath(path, Region.Op.DIFFERENCE);
-        drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
+        if(turnPageAnimDirection == TurnPageAnimDirection.LEFT) {
+            drawPageContent(canvas, mText, currPageIndx, totalPageNum, currChapterName);
+        }
+        else if(turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+            Log.d(TAG,"ondraw drawPrevPageContent currPage");
+            drawPrevPageContent(canvas);
+        }
         mPaint.setColor(mTextColor);
         Paint.Style style = mPaint.getStyle();
         mPaint.setStyle(Paint.Style.STROKE);
@@ -528,7 +534,13 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipPath(pathTwo);
         canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
-        drawNextPageContent(canvas);
+        if(turnPageAnimDirection == TurnPageAnimDirection.LEFT) {
+            drawNextPageContent(canvas);
+        }
+        else if(turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+            Log.d(TAG,"ondraw drawPrevPageContent nextpage");
+            drawPageContent(canvas, mText, currPageIndx, totalPageNum, currChapterName);
+        }
         canvas.drawLine(jx, jy, kx, ky, mPaint);
         canvas.restore();
 
@@ -556,7 +568,13 @@ public class MyCustomView extends View {
         matrix.setValues(values);
         canvas.setMatrix(matrix);
         mPaint.setColorFilter(backColorFilter);
-        drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
+        if(turnPageAnimDirection == TurnPageAnimDirection.LEFT) {
+            drawPageContent(canvas, mText, currPageIndx, totalPageNum, currChapterName);
+        }
+        else if(turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+            Log.d(TAG,"ondraw drawPrevPageContent backpage");
+            drawPrevPageContent(canvas);
+        }
         canvas.restore();
         mPaint.setColorFilter(colorFilter);
 
@@ -645,6 +663,51 @@ public class MyCustomView extends View {
 
 
         isTouchScroll = false;
+    }
+
+    private void drawPrevPageContent(Canvas canvas){
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        Chapter currChapter = mb.getCurrChapter();
+        int currPageIndx = currChapter.getCurrPageNumIndx();
+        List<Integer> pageList = currChapter.getPageNumList();
+        String content = "";
+        int prevPageIndx;
+        int totalPageNum;
+        String chapterName;
+        //如果当前页是本章第一页
+        if(currPageIndx == 0){
+            Chapter prevChapter = mb.getPrevChapter();
+            if(prevChapter == null){
+                Log.e(TAG,"prevChapter == null");
+                return;
+            }
+            if(prevChapter.getContent().isEmpty()){
+                Log.e(TAG,"prevChapter is empty");
+                return;
+            }
+            //获取下章第一页内容
+            List<Integer> prevPageList = prevChapter.getPageNumList();
+            int endPageNumIndx = prevPageList.size() - 1;
+            content = prevChapter.getContent().substring(prevPageList.get(endPageNumIndx - 1),prevPageList.get(endPageNumIndx));
+            Log.d(TAG,"drawPrevPage prevchapter endcontent ="+content);
+            prevPageIndx = endPageNumIndx;
+            totalPageNum = prevChapter.getPageTotal();
+            chapterName = prevChapter.getName();
+        }
+        else{
+            if(currPageIndx == 1){
+                content = currChapter.getContent().substring(0,pageList.get(0));
+            }
+            else {
+                content = currChapter.getContent().substring(pageList.get(currPageIndx - 2), pageList.get(currPageIndx - 1));
+            }
+            Log.d(TAG,"drawPrevPage content ="+content);
+            prevPageIndx = currPageIndx - 1;
+            totalPageNum = currChapter.getPageTotal();
+            chapterName = currChapter.getName();
+        }
+
+        drawPageContent(canvas,content,prevPageIndx,totalPageNum,chapterName);
     }
 
     private void drawNextPageContent(Canvas canvas){
@@ -1119,6 +1182,13 @@ public class MyCustomView extends View {
                 }
 
                 Log.d(TAG,"MyGestureDetector onscroll,Left anim, e2.getX()= "+e2.getX());
+                isTouchScroll = true;
+                invalidate();
+            }
+            else if(turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+                touchPointX = e2.getX() - 100;
+                touchPointY = height - 1;
+                drawTurnNextPageAnimationDown(cacheCanvas);
                 isTouchScroll = true;
                 invalidate();
             }
