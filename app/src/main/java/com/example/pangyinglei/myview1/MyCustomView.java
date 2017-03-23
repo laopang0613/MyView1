@@ -122,6 +122,8 @@ public class MyCustomView extends View {
     }
     private TurnPageStartPos turnPageStartPos = TurnPageStartPos.NOTALL;
 
+    private boolean isPermitTurnPage = false;
+
     private String nextPageContent;
 
 
@@ -224,6 +226,12 @@ public class MyCustomView extends View {
             drawPageContent(canvas, mText, currPageIndx, totalPageNum,currChapterName);
         }
 
+//        if(isPermitTurnPage){
+//            if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
+//                turnNextPage();
+//                isPermitTurnPage = false;
+//            }
+//        }
 
     }
 
@@ -465,8 +473,8 @@ public class MyCustomView extends View {
         float jx, jy;
         float kx, ky;
 
-        bx = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().widthPixels;
-        by = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+        bx = MyFileUtils.getAppWidth();
+        by = MyFileUtils.getAppHeight();
 
 
         //Log.d(TAG, "bx =" + bx + " by=" + by);
@@ -1039,7 +1047,55 @@ public class MyCustomView extends View {
         return pageEndCharIndx;
     }
 
-    private void turnPageDone(){
+    //判断右上翻页左曲线是否超过View左边界,如果越界重新计算触摸点坐标。
+    private void turnPageUpCrossBorderRevise(){
+        float bx,by,ex,ey,cx,hx;
+        bx = MyFileUtils.getAppWidth();
+        by = 0;
+
+        //Log.d(TAG, "bx =" + bx + " by=" + by);
+        ex = (touchPointX + bx) / 2;
+        ey = (touchPointY + by) / 2;
+        //Log.d(TAG, "ex =" + ex + " ey =" + ey);
+        cx = ex - (by - ey) * (by - ey) / (bx - ex);
+        //Log.d(TAG, "cx =" + cx + " cy=" + cy);
+
+        hx = bx - (bx - cx) / 2 * 3;
+        if(hx < 0){
+            float c1x = bx/3;
+            float c1y = by;
+            float len = (float)Math.sqrt((touchPointX - c1x)*(touchPointX - c1x) + (touchPointY - c1y)*(touchPointY - c1y));
+            float k = (bx - c1x)/len;
+            touchPointX = k*(touchPointX - c1x) + c1x;
+            touchPointY = k*(touchPointY - c1y) + c1y;
+        }
+    }
+
+    //判断右下翻页左曲线是否超过View左边界,如果越界重新计算触摸点坐标。
+    private void turnPageDownCrossBorderRevise(){
+        float bx,by,ex,ey,cx,hx;
+        bx = MyFileUtils.getAppWidth();
+        by = MyFileUtils.getAppHeight();
+
+        //Log.d(TAG, "bx =" + bx + " by=" + by);
+        ex = (touchPointX + bx) / 2;
+        ey = (touchPointY + by) / 2;
+        //Log.d(TAG, "ex =" + ex + " ey =" + ey);
+        cx = ex - (by - ey) * (by - ey) / (bx - ex);
+        //Log.d(TAG, "cx =" + cx + " cy=" + cy);
+
+        hx = bx - (bx - cx) / 2 * 3;
+        if(hx < 0){
+            float c1x = bx/3;
+            float c1y = by;
+            float len = (float)Math.sqrt((touchPointX - c1x)*(touchPointX - c1x) + (touchPointY - c1y)*(touchPointY - c1y));
+            float k = (bx - c1x)/len;
+            touchPointX = k*(touchPointX - c1x) + c1x;
+            touchPointY = k*(touchPointY - c1y) + c1y;
+        }
+    }
+
+    private void turnPageDone(MotionEvent event){
         int slop = ViewConfiguration.get(BookshelfApp.getBookshelfApp()).getScaledTouchSlop();
 //            Log.d(TAG,"touchslop = "+slop);
         Log.d(TAG,"MyGestureDetector onFling changedirpoints.size= "+changeDirPoints.size());
@@ -1059,6 +1115,26 @@ public class MyCustomView extends View {
 
         //翻书方向跟滑动方向不一致，不翻书。
         if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
+//            touchPointX = 0;
+//            touchPointY = event.getY();
+//            if(turnPageStartPos == TurnPageStartPos.DOWN){
+//                Log.d(TAG,"TurnPageStartPos.DOWN next");
+//                drawTurnNextPageAnimationDown(cacheCanvas);
+//            }
+//            else if(turnPageStartPos == TurnPageStartPos.UP){
+//                Log.d(TAG,"TurnPageStartPos.UP next");
+//                Log.d(TAG,"MyGestureDetector onscroll TurnPageStartPos.UP");
+//                drawTurnNextPageAnimationUp(cacheCanvas);
+//            }
+//            else{
+//                Log.d(TAG,"TurnPageStartPos.OTHER next");
+//                touchPointY = MyFileUtils.getAppHeight() - 1;
+//                drawTurnNextPageAnimationDown(cacheCanvas);
+//            }
+//            isTouchScroll = true;
+//            isPermitTurnPage = true;
+//            invalidate();
+
             turnNextPage();
         }
         else if(flingDirection == FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
@@ -1135,16 +1211,19 @@ public class MyCustomView extends View {
             if(turnPageAnimDirection == TurnPageAnimDirection.LEFT){
                 touchPointX = e2.getX();
                 touchPointY = e2.getY();
+
                 if(turnPageStartPos == TurnPageStartPos.NOTALL){
                     Log.d(TAG,"TurnPageStartPos.NOTALL");
                     if(touchPointY > height*2/3) {
                         Log.d(TAG,"TurnPageStartPos.DOWN first");
                         turnPageStartPos = TurnPageStartPos.DOWN;
+                        turnPageDownCrossBorderRevise();
                         drawTurnNextPageAnimationDown(cacheCanvas);
                     }
                     else if(touchPointY < height/3){
                         Log.d(TAG,"TurnPageStartPos.UP fisrt");
                         turnPageStartPos = TurnPageStartPos.UP;
+                        turnPageUpCrossBorderRevise();
                         drawTurnNextPageAnimationUp(cacheCanvas);
                     }
                     else{
@@ -1156,11 +1235,13 @@ public class MyCustomView extends View {
                 }
                 else if(turnPageStartPos == TurnPageStartPos.DOWN){
                     Log.d(TAG,"TurnPageStartPos.DOWN next");
+                    turnPageDownCrossBorderRevise();
                     drawTurnNextPageAnimationDown(cacheCanvas);
                 }
                 else if(turnPageStartPos == TurnPageStartPos.UP){
                     Log.d(TAG,"TurnPageStartPos.UP next");
                     Log.d(TAG,"MyGestureDetector onscroll TurnPageStartPos.UP");
+                    turnPageUpCrossBorderRevise();
                     drawTurnNextPageAnimationUp(cacheCanvas);
                 }
                 else{
@@ -1212,7 +1293,7 @@ public class MyCustomView extends View {
                 //需要把滑动的最后一个点加入，可能该点并未改变方向。
                 changeDirPoints.add(event.getX());
                 //翻页
-                turnPageDone();
+                turnPageDone(event);
                 Log.d(TAG,"onTouchEvent action up");
                 if(turnPageStartPos == TurnPageStartPos.DOWN) {
                     touchPointX = MyFileUtils.getAppWidth();
