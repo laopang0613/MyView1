@@ -1,6 +1,9 @@
 package com.example.pangyinglei.myview1;
 
+import android.animation.Animator;
 import android.animation.AnimatorInflater;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -1114,7 +1117,7 @@ public class MyCustomView extends View {
         }
 
         //翻书方向跟滑动方向不一致，不翻书。
-        if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
+        if(flingDirection != FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
 //            touchPointX = 0;
 //            touchPointY = event.getY();
 //            if(turnPageStartPos == TurnPageStartPos.DOWN){
@@ -1134,13 +1137,156 @@ public class MyCustomView extends View {
 //            isTouchScroll = true;
 //            isPermitTurnPage = true;
 //            invalidate();
+            //touchPointY = event.getY();
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(event.getX(),0);
+            valueAnimator.setTarget(this);
+            valueAnimator.setDuration(20);
+            valueAnimator.start();
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    touchPointX = (float)animation.getAnimatedValue();
+                    Log.d(TAG,"valueAnimator touchPointX ="+touchPointX);
+                    if(turnPageStartPos == TurnPageStartPos.DOWN){
+                        Log.d(TAG,"TurnPageStartPos.DOWN next");
+                        drawTurnNextPageAnimationDown(cacheCanvas);
+                    } else if (turnPageStartPos == TurnPageStartPos.UP) {
+                        Log.d(TAG, "TurnPageStartPos.UP next");
+                        Log.d(TAG, "MyGestureDetector onscroll TurnPageStartPos.UP");
+                        drawTurnNextPageAnimationUp(cacheCanvas);
+                    } else {
+                        Log.d(TAG, "TurnPageStartPos.OTHER next");
+                        touchPointY = MyFileUtils.getAppHeight() - 1;
+                        drawTurnNextPageAnimationDown(cacheCanvas);
+                    }
+                    isTouchScroll = true;
+                    invalidate();
+                }
+            });
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    //super.onAnimationEnd(animation);
+                    Log.d(TAG,"valueAnimator end");
+                    turnNextPage();
+                    if(turnPageStartPos == TurnPageStartPos.DOWN) {
+                        touchPointX = MyFileUtils.getAppWidth();
+                        touchPointY = MyFileUtils.getAppHeight();
+                    }
+                    else if(turnPageStartPos == TurnPageStartPos.UP){
+                        touchPointX = MyFileUtils.getAppWidth();
+                        touchPointY = 0;
+                    }
+                    isTouchScroll = false;
+                    invalidate();
+                    turnPageStartPos = TurnPageStartPos.NOTALL;
+                }
+            });
 
-            turnNextPage();
         }
-        else if(flingDirection == FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
-            turnPrevPage();
+        else if(flingDirection != FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(event.getX(),MyFileUtils.getAppWidth());
+            valueAnimator.setDuration(20);
+            valueAnimator.setTarget(this);
+            valueAnimator.start();
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    touchPointX = (float)animation.getAnimatedValue();
+                    touchPointY = MyFileUtils.getAppHeight() - 1;
+                    drawTurnNextPageAnimationDown(cacheCanvas);
+                    isTouchScroll = true;
+                    invalidate();
+                }
+            });
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    turnPrevPage();
+                    isTouchScroll = false;
+                    invalidate();
+                    turnPageStartPos = TurnPageStartPos.NOTALL;
+                }
+            });
+        }
+        else if(flingDirection == FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
+            final float firstx = event.getX();
+            final float firsty = event.getY();
+            final float viewWidth = MyFileUtils.getAppWidth();
+            final float viewHeight = MyFileUtils.getAppHeight();
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(event.getX(),viewWidth);
+            valueAnimator.setTarget(this);
+            valueAnimator.setDuration(20);
+            valueAnimator.start();
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    touchPointX = (float)animation.getAnimatedValue();
+                    Log.d(TAG,"valueAnimator touchPointX ="+touchPointX);
+                    if(turnPageStartPos == TurnPageStartPos.DOWN){
+                        touchPointY = viewHeight - (viewWidth - touchPointX)*(viewHeight - firsty)/(viewWidth - firstx);
+                        Log.d(TAG,"TurnPageStartPos.DOWN next");
+                        drawTurnNextPageAnimationDown(cacheCanvas);
+                    } else if (turnPageStartPos == TurnPageStartPos.UP) {
+                        touchPointY = (viewWidth - touchPointX)*firsty/(viewWidth - firstx);
+                        Log.d(TAG, "TurnPageStartPos.UP next");
+                        Log.d(TAG, "MyGestureDetector onscroll TurnPageStartPos.UP");
+                        drawTurnNextPageAnimationUp(cacheCanvas);
+                    } else {
+                        Log.d(TAG, "TurnPageStartPos.OTHER next");
+                        touchPointY = MyFileUtils.getAppHeight() - 1;
+                        drawTurnNextPageAnimationDown(cacheCanvas);
+                    }
+                    isTouchScroll = true;
+                    invalidate();
+                }
+            });
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    //super.onAnimationEnd(animation);
+                    Log.d(TAG,"valueAnimator end");
+                    //turnNextPage();
+                    if(turnPageStartPos == TurnPageStartPos.DOWN) {
+                        touchPointX = MyFileUtils.getAppWidth();
+                        touchPointY = MyFileUtils.getAppHeight();
+                    }
+                    else if(turnPageStartPos == TurnPageStartPos.UP){
+                        touchPointX = MyFileUtils.getAppWidth();
+                        touchPointY = 0;
+                    }
+                    isTouchScroll = false;
+                    invalidate();
+                    turnPageStartPos = TurnPageStartPos.NOTALL;
+                }
+            });
+        }
+        else if(flingDirection == FlingDirection.LEFT && turnPageAnimDirection == TurnPageAnimDirection.RIGHT){
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(event.getX(),0);
+            valueAnimator.setDuration(20);
+            valueAnimator.setTarget(this);
+            valueAnimator.start();
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    touchPointX = (float)animation.getAnimatedValue();
+                    touchPointY = MyFileUtils.getAppHeight() - 1;
+                    drawTurnNextPageAnimationDown(cacheCanvas);
+                    isTouchScroll = true;
+                    invalidate();
+                }
+            });
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    isTouchScroll = false;
+                    invalidate();
+                    turnPageStartPos = TurnPageStartPos.NOTALL;
+                }
+            });
         }
     }
+
 
     public class MyGestureDetector extends GestureDetector.SimpleOnGestureListener{
         float xDown = 0,yDown = 0,xFling = 0,yFling = 0;
@@ -1295,17 +1441,7 @@ public class MyCustomView extends View {
                 //翻页
                 turnPageDone(event);
                 Log.d(TAG,"onTouchEvent action up");
-                if(turnPageStartPos == TurnPageStartPos.DOWN) {
-                    touchPointX = MyFileUtils.getAppWidth();
-                    touchPointY = MyFileUtils.getAppHeight();
-                }
-                else if(turnPageStartPos == TurnPageStartPos.UP){
-                    touchPointX = MyFileUtils.getAppWidth();
-                    touchPointY = 0;
-                }
-                isTouchScroll = false;
-                invalidate();
-                turnPageStartPos = TurnPageStartPos.NOTALL;
+
                 break;
         }
         return isDetector;
