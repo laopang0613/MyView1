@@ -30,7 +30,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GestureDetectorCompat;
 import android.text.method.MovementMethod;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -38,6 +40,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LayoutAnimationController;
@@ -46,6 +49,7 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -65,26 +69,28 @@ public class MyCustomView extends View {
     private int mTextColor;
     private float mTextSize;
     //private Rect mRound;
-    private float lineWidth = 960f;
-    private float lineHeight = 55f;
-    private float txtTopXStart = 60f;
-    private float txtTopYStart = 150f;
+    private float lineWidth;
+    private float lineHeight;
+    private float txtTopXStart;
+    private float txtTopYStart;
     //private int lineNumInPage = 26;
-    private float txtSize = 55f;
+    private float txtSize;
 
-    private float lineSpace = 27f;
-    private float paraSpace = 55f;
-    private float firstPageYStart = 500f;
-    private float titleSize = 80f;
-    private float titleHeight = 80f;
+    //行间距
+    private float lineSpace;
+    //段间距
+    private float paraSpace;
+    private float firstPageYStart;
+    private float titleSize;
+    private float titleHeight;
     //private float titleX = 40f;
-    private float titleY = 200f;
-    private float littleTitleY = 40f;
-    private float littleTitleSize = 40f;
+    private float titleY;
+    private float littleTitleY;
+    private float littleTitleSize;
 
     //private int pageBeginIndx = 0;
-    private int pageEndIndx = 0;
-    private float pageIndxSize = 30f;
+    private int pageEndIndx;
+    private float pageIndxSize;
 
 
     private boolean isTouchScroll = false;
@@ -167,11 +173,17 @@ public class MyCustomView extends View {
         init();
     }
 
+
     private void init(){
         int mWidth = MyFileUtils.getAppWidth();
         int mHeight = MyFileUtils.getAppHeight();
-//        touchPointX = mWidth;
-//        touchPointY = mHeight;
+        Log.d(TAG,"init mWidth = "+mWidth+" mHeight="+mHeight);
+        DisplayMetrics dm = MyFileUtils.getOriginalDm(BookshelfApp.getBookshelfApp());
+        if(dm == null){
+            Log.e("TAG","dm = null!");
+            return;
+        }
+        setParamInit(dm.widthPixels,dm.heightPixels);
 
         mPaint = new Paint();
         mPaint.setTextSize(mTextSize);
@@ -201,6 +213,30 @@ public class MyCustomView extends View {
         //Paint.FontMetrics fm = mPaint.getFontMetrics();
         //Log.d(TAG,"mText.length = "+mText.length());
         gestureDetectorCompat = new GestureDetectorCompat(BookshelfApp.getBookshelfApp(),new MyGestureDetector());
+    }
+
+    private void setParamInit(int width,int height){
+        int kw = width/1080;
+        int kh = height/1920;
+        lineWidth = 960 * kw;
+        lineHeight = 55 * kh;
+        txtTopXStart = 60 * kw;
+        txtTopYStart = 150 * kh;
+
+        txtSize = 55 * kw;
+
+        lineSpace = 27 * kh;
+        paraSpace = 55 * kh;
+        firstPageYStart = 500 * kh;
+        titleSize = 80 * kw;
+        titleHeight = 80 * kh;
+
+        titleY = 200 * kh;
+        littleTitleY = 40 * kh;
+        littleTitleSize = 40 * kw;
+
+        pageEndIndx = 0;
+        pageIndxSize = 30 * kw;
     }
 
     public String getmText() {
@@ -1118,26 +1154,6 @@ public class MyCustomView extends View {
 
         //翻书方向跟滑动方向不一致，不翻书。
         if(flingDirection != FlingDirection.RIGHT && turnPageAnimDirection == TurnPageAnimDirection.LEFT){
-//            touchPointX = 0;
-//            touchPointY = event.getY();
-//            if(turnPageStartPos == TurnPageStartPos.DOWN){
-//                Log.d(TAG,"TurnPageStartPos.DOWN next");
-//                drawTurnNextPageAnimationDown(cacheCanvas);
-//            }
-//            else if(turnPageStartPos == TurnPageStartPos.UP){
-//                Log.d(TAG,"TurnPageStartPos.UP next");
-//                Log.d(TAG,"MyGestureDetector onscroll TurnPageStartPos.UP");
-//                drawTurnNextPageAnimationUp(cacheCanvas);
-//            }
-//            else{
-//                Log.d(TAG,"TurnPageStartPos.OTHER next");
-//                touchPointY = MyFileUtils.getAppHeight() - 1;
-//                drawTurnNextPageAnimationDown(cacheCanvas);
-//            }
-//            isTouchScroll = true;
-//            isPermitTurnPage = true;
-//            invalidate();
-            //touchPointY = event.getY();
             ValueAnimator valueAnimator = ValueAnimator.ofFloat(event.getX(),0);
             valueAnimator.setTarget(this);
             valueAnimator.setDuration(20);
@@ -1750,6 +1766,16 @@ public class MyCustomView extends View {
         mb.setCurrBookMarkIndx(mb.getBookMarkList().size() - 1);
         BookMark bookMarktwo = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrBookMark();
         Log.d(TAG,"time="+bookMarktwo.getTime()+" percent="+bookMarktwo.getPercent());
+
+    }
+
+    public void recyle(){
+        this.cacheCanvas = null;
+        if(!cacheBitmap.isRecycled()) {
+            cacheBitmap.recycle();
+        }
+        this.mPopupWindow = null;
+        this.gestureDetectorCompat = null;
 
     }
 }

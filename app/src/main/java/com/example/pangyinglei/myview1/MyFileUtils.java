@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.os.storage.StorageManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.WindowManager;
 
 import java.io.BufferedReader;
@@ -67,16 +68,18 @@ public class MyFileUtils {
 
     private static Paint mPaint = new Paint();
 
-    private static float lineWidth = 960f;
-    private static float lineHeight = 55f;
-    //private static float txtTopXStart = 60f;
-    private static float txtTopYStart = 150f;
-    //private int lineNumInPage = 26;
-    private static float txtSize = 55f;
-    private static float lineSpace = 27f;
-    private static float paraSpace = 55f;
-    private static float firstPageYStart = 500f;
-    private static float pageIndxSize = 30f;
+    private static float lineWidth;
+    private static float lineHeight;
+
+    private static float txtTopYStart;
+
+    private static float txtSize;
+    private static float lineSpace;
+    private static float paraSpace;
+    private static float firstPageYStart;
+    private static float pageIndxSize;
+
+    private static boolean isInitPara = false;
 
     //private static List<String> smallFileList = new ArrayList<String>();
 
@@ -85,10 +88,35 @@ public class MyFileUtils {
         initPaint();
     }
 
+    private static void initParam(){
+        DisplayMetrics dm = getOriginalDm(BookshelfApp.getBookshelfApp());
+        Log.d(TAG,"dm.width ="+dm.widthPixels+" dm.height ="+dm.heightPixels);
+        float kw = dm.widthPixels / 1080;
+        float kh = dm.heightPixels / 1920;
+        lineWidth = 960 * kw;
+        lineHeight = 55 * kh;
+        txtTopYStart = 150 * kh;
+        txtSize = 55;
+        lineSpace = 27 * kh;
+        paraSpace = 55 * kh;
+        firstPageYStart = 500 * kh;
+        pageIndxSize = 30;
+        isInitPara = false;
+    }
 
     private void initPaint(){
         mPaint.setTextSize(txtSize);
     }
+
+    //获取原始尺寸。
+    public static DisplayMetrics getOriginalDm(Context context){
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        Display display = windowManager.getDefaultDisplay();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        display.getRealMetrics(displayMetrics);
+        return displayMetrics;
+    }
+
 
     public static Paint getPaint(){
         return mPaint;
@@ -183,6 +211,12 @@ public class MyFileUtils {
     public static String deal()  {
         //Log.d(TAG,"start deal");
         //pattern = Pattern.compile(regex,Pattern.MULTILINE);
+
+        //初始化行间距等参数。
+        if(!isInitPara) {
+            initParam();
+        }
+
         FileInputStream fis = null;
         BufferedReader br = null;
         //StringBuilder sb = new StringBuilder();
@@ -566,6 +600,9 @@ public class MyFileUtils {
     }
 
     public static  void setPageNumList(String destStr,int chapterIndx,MyBook mb,Paint mPaint){
+        if(!isInitPara) {
+            initParam();
+        }
         mPaint.setTextSize(txtSize);
         int totalChar = destStr.length();
         //Log.d(TAG,"totalchar = "+totalChar);
