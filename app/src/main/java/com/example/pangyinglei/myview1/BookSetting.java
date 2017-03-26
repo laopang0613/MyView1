@@ -7,63 +7,34 @@ import android.content.SharedPreferences;
  */
 
 public class BookSetting {
-    private float LINEWIDTH = 960f;
-    private float LINEHEIGHT = 55f;
+    private float lineWidth = 960f;
+    private float lineHeight = 55f;
     private float TXTTOP_XSTART = 40f;
     private float TXTTOP_YSTART = 80f;
     private int LINENUMINPAGE = 26;
     private float txtSize = 55f;
 
+    private static float brightness;
+    private static boolean isNightMode = false;
 
     public BookSetting() {
 
     }
 
-    public float getLINEHEIGHT() {
-        return LINEHEIGHT;
+    public static float getBrightness() {
+        return brightness;
     }
 
-    public void setLINEHEIGHT(float LINEHEIGHT) {
-        this.LINEHEIGHT = LINEHEIGHT;
+    public static void setBrightness(float brightness) {
+        BookSetting.brightness = brightness;
     }
 
-    public int getLINENUMINPAGE() {
-        return LINENUMINPAGE;
+    public static boolean isNightMode() {
+        return isNightMode;
     }
 
-    public void setLINENUMINPAGE(int LINENUMINPAGE) {
-        this.LINENUMINPAGE = LINENUMINPAGE;
+    public static void setNightMode(boolean nightMode) {
+        isNightMode = nightMode;
     }
 
-    public float getLINEWIDTH() {
-        return LINEWIDTH;
-    }
-
-    public void setLINEWIDTH(float LINEWIDTH) {
-        this.LINEWIDTH = LINEWIDTH;
-    }
-
-    public float getTxtSize() {
-        return txtSize;
-    }
-
-    public void setTxtSize(float txtSize) {
-        this.txtSize = txtSize;
-    }
-
-    public float getTXTTOP_XSTART() {
-        return TXTTOP_XSTART;
-    }
-
-    public void setTXTTOP_XSTART(float TXTTOP_XSTART) {
-        this.TXTTOP_XSTART = TXTTOP_XSTART;
-    }
-
-    public float getTXTTOP_YSTART() {
-        return TXTTOP_YSTART;
-    }
-
-    public void setTXTTOP_YSTART(float TXTTOP_YSTART) {
-        this.TXTTOP_YSTART = TXTTOP_YSTART;
-    }
 }

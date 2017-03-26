@@ -131,10 +131,6 @@ public class MyCustomView extends View {
     }
     private TurnPageStartPos turnPageStartPos = TurnPageStartPos.NOTALL;
 
-    private boolean isPermitTurnPage = false;
-
-    private String nextPageContent;
-
 
     private PopupWindow mPopupWindow;
 
@@ -258,6 +254,12 @@ public class MyCustomView extends View {
         String currChapterName = currChapter.getName();
         int currPageIndx = currChapter.getCurrPageNumIndx();
         int totalPageNum = currChapter.getPageTotal();
+        if(BookSetting.isNightMode()){
+            canvas.drawColor(Color.BLACK);
+        }
+        else {
+            canvas.drawColor(Color.WHITE);
+        }
         if (isTouchScroll) {
             Log.d(TAG,"ondraw cacheBitmap");
             canvas.drawBitmap(cacheBitmap, 0, 0, mPaint);
@@ -287,7 +289,12 @@ public class MyCustomView extends View {
 
         //先刷一层背景色。
         int color = mPaint.getColor();
-        mPaint.setColor(Color.WHITE);
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.BLACK);
+        }
+        else {
+            mPaint.setColor(Color.WHITE);
+        }
         canvas.drawRect(0,0,viewWidth,viewHeight,mPaint);
         mPaint.setColor(color);
 
@@ -346,6 +353,12 @@ public class MyCustomView extends View {
         canvas.clipRect(0, 0, viewWidth, viewHeight);
         canvas.clipPath(path, Region.Op.DIFFERENCE);
         Log.d(TAG,"ondraw mText.size()" + mText.length());
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.WHITE);
+        }
+        else {
+            mPaint.setColor(Color.BLACK);
+        }
         drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
         mPaint.setColor(mTextColor);
         Paint.Style style = mPaint.getStyle();
@@ -365,6 +378,12 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipPath(pathTwo);
         canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.WHITE);
+        }
+        else {
+            mPaint.setColor(Color.BLACK);
+        }
         drawNextPageContent(canvas);
         canvas.drawLine(jx, jy, kx, ky, mPaint);
         canvas.restore();
@@ -392,6 +411,13 @@ public class MyCustomView extends View {
         Log.d(TAG,"x4="+x4+" x5="+x5+" x6="+x6);
         matrix.setValues(values);
         canvas.setMatrix(matrix);
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.WHITE);
+        }
+        else {
+            mPaint.setColor(Color.BLACK);
+        }
+
         mPaint.setColorFilter(backColorFilter);
         drawPageContent(canvas, mText,currPageIndx,totalPageNum,currChapterName);
         canvas.restore();
@@ -497,7 +523,12 @@ public class MyCustomView extends View {
 
         //先刷一层背景色。
         int color = mPaint.getColor();
-        mPaint.setColor(Color.WHITE);
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.BLACK);
+        }
+        else {
+            mPaint.setColor(Color.WHITE);
+        }
         canvas.drawRect(0,0,MyFileUtils.getAppWidth(),MyFileUtils.getAppHeight(),mPaint);
         mPaint.setColor(color);
 
@@ -556,6 +587,12 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipRect(0, 0, bx, by);
         canvas.clipPath(path, Region.Op.DIFFERENCE);
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.WHITE);
+        }
+        else {
+            mPaint.setColor(Color.BLACK);
+        }
         if(turnPageAnimDirection == TurnPageAnimDirection.LEFT) {
             drawPageContent(canvas, mText, currPageIndx, totalPageNum, currChapterName);
         }
@@ -581,6 +618,12 @@ public class MyCustomView extends View {
         canvas.save();
         canvas.clipPath(pathTwo);
         canvas.clipPath(path, Region.Op.REVERSE_DIFFERENCE);
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.WHITE);
+        }
+        else {
+            mPaint.setColor(Color.BLACK);
+        }
         if(turnPageAnimDirection == TurnPageAnimDirection.LEFT) {
             drawNextPageContent(canvas);
         }
@@ -614,6 +657,14 @@ public class MyCustomView extends View {
         Log.d(TAG,"x4="+x4+" x5="+x5+" x6="+x6);
         matrix.setValues(values);
         canvas.setMatrix(matrix);
+
+        if(BookSetting.isNightMode()){
+            mPaint.setColor(Color.WHITE);
+        }
+        else {
+            mPaint.setColor(Color.BLACK);
+        }
+
         mPaint.setColorFilter(backColorFilter);
         if(turnPageAnimDirection == TurnPageAnimDirection.LEFT) {
             drawPageContent(canvas, mText, currPageIndx, totalPageNum, currChapterName);
@@ -796,7 +847,13 @@ public class MyCustomView extends View {
     private void drawPageContent(Canvas canvas,String content,int currPageIndx,int totalPageNum,String chapterName){
         //mPaint.setColor(Color.WHITE);
         //canvas.drawRect(mRound,mPaint);
-        mPaint.setColor(mTextColor);
+//        if(isOnNightMode){
+//            mPaint.setColor(Color.WHITE);
+//        }
+//        else {
+//            mPaint.setColor(Color.BLACK);
+//        }
+        //mPaint.setColor(mTextColor);
 //        canvas.drawText(content,30f,30f,mPaint);
 //        canvas.drawText(content,0,content.length(),TXTTOP_XSTART,TXTTOP_YSTART,mPaint);
         //Log.d(TAG,"content = "+content);
@@ -1725,7 +1782,8 @@ public class MyCustomView extends View {
     }
 
     private void gotoChangeLight(View v){
-        addBookmark();
+        //addBookmark();
+        changeBacklight();
     }
 
     private void gotoSetting(View v){
@@ -1737,6 +1795,29 @@ public class MyCustomView extends View {
             mPopupWindow.dismiss();
             mPopupWindow = null;
         }
+    }
+
+//    private void setScreenBrightness(int paramInt){
+//        Context context;
+//        context.ge
+//        Window localWindow = getWindow();
+//        WindowManager.LayoutParams localLayoutParams = localWindow.getAttributes();
+//        float f = paramInt / 255.0F;
+//        localLayoutParams.screenBrightness = f;
+//        localWindow.setAttributes(localLayoutParams);
+//    }
+
+    private void changeBacklight(){
+        if(BookSetting.isNightMode()){
+            BookSetting.setNightMode(false);
+            mPaint.setColor(Color.BLACK);
+        }
+        else {
+            BookSetting.setNightMode(true);
+            mPaint.setColor(Color.parseColor("#CCCCCC"));
+        }
+
+        invalidate();
     }
 
     private void addBookmark(){
