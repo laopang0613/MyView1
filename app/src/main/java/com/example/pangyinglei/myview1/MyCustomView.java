@@ -1768,14 +1768,4 @@ public class MyCustomView extends View {
         Log.d(TAG,"time="+bookMarktwo.getTime()+" percent="+bookMarktwo.getPercent());
 
     }
-
-    public void recyle(){
-        this.cacheCanvas = null;
-        if(!cacheBitmap.isRecycled()) {
-            cacheBitmap.recycle();
-        }
-        this.mPopupWindow = null;
-        this.gestureDetectorCompat = null;
-
-    }
 }

@@ -115,7 +115,7 @@ public class ChapterContentActivity extends AppCompatActivity {
         Log.d(TAG,"currChapterIndx = "+currChapterIndx+"currPageIndx="+currPageIndx);
         BookDBHelper.updateChapterIndxAndPageIndx(currChapterIndx,currPageIndx);
         //mCustomView.setmText("");
-        mCustomView.recyle();
+        //mCustomView.recyle();
         mCustomView = null;
         progressBar = null;
         tv = null;
