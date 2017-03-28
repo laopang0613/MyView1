@@ -783,12 +783,17 @@ public class MyCustomView extends View {
                 Log.e(TAG,"prevChapter is empty");
                 return;
             }
-            //获取下章第一页内容
+            //获取前一章第最后一页内容
             List<Integer> prevPageList = prevChapter.getPageNumList();
-            int endPageNumIndx = prevPageList.size() - 1;
-            content = prevChapter.getContent().substring(prevPageList.get(endPageNumIndx - 1),prevPageList.get(endPageNumIndx));
-            Log.d(TAG,"drawPrevPage prevchapter endcontent ="+content);
-            prevPageIndx = endPageNumIndx;
+            if(prevPageList.size() == 1){
+                content = prevChapter.getContent();
+                prevPageIndx = 0;
+            }else {
+                int endPageNumIndx = prevPageList.size() - 1;
+                content = prevChapter.getContent().substring(prevPageList.get(endPageNumIndx - 1), prevPageList.get(endPageNumIndx));
+                Log.d(TAG,"drawPrevPage prevchapter endcontent ="+content);
+                prevPageIndx = endPageNumIndx;
+            }
             totalPageNum = prevChapter.getPageTotal();
             chapterName = prevChapter.getName();
         }
@@ -1631,10 +1636,15 @@ public class MyCustomView extends View {
             else{
                 //跳转到前一章之前清空当前章节内容。
 //                mb.getCurrChapter().setContent("");
-
+                int endPageIndx;
                 List<Integer> pageNumList = prevChapter.getPageNumList();
-                int endPageIndx = pageNumList.size() - 1;
-                mText = prevChapter.getContent().substring(pageNumList.get(endPageIndx - 1),pageNumList.get(endPageIndx));
+                if(pageNumList.size() == 1){
+                    mText = prevChapter.getContent();
+                    endPageIndx = 0;
+                }else {
+                    endPageIndx = pageNumList.size() - 1;
+                    mText = prevChapter.getContent().substring(pageNumList.get(endPageIndx - 1), pageNumList.get(endPageIndx));
+                }
                 int currChapterIndx = mb.getCurrChapterIndx();
                 currChapterIndx--;
                 mb.setCurrChapterIndx(currChapterIndx);
