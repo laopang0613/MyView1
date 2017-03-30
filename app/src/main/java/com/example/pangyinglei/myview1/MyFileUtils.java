@@ -43,14 +43,19 @@ public class MyFileUtils {
     //private static final String REGEX = "\u7b2c{1}.+\u7ae0{1}.+[\\r\\n]{1}?";
 
     // 零 \u96f6 一 \u4e00  二 \u4e8c 三 \u4e09 四 \u56db 五 \u4e94 六 \u516d 七 \u4e03
-    // 八 \u516b 九 \u4e5d 十 \u5341  百 \u767e 千 \u5343 万 \u4e07 卷 \u5377
+    // 八 \u516b 九 \u4e5d 十 \u5341  百 \u767e 千 \u5343 万 \u4e07
+    // 卷 \u5377 集\u96c6 部\u90e8 篇\u7bc7 册\u518c
+    // 章 \u7ae0 折 \u6298 回 \u56de  节 \u8282  正 \u6b63 文 \u6587
 
     public static final String FILESUFFIX = ".txt";
     public static final int SFILECHAPTERCOUNT = 50;
     private static final String NUMREGEX1 = "[\u96f6\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\\d]";
     private static final String NUMREGEX2 = "[\u96f6\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07\\d]";
-    private static final String VOLUMEREGEX = "(\u7b2c"+NUMREGEX1+"{1,7}\\u5377)?(?>\\s*)";
-    private static final String CHAPTERREGEX = "(\u7b2c"+NUMREGEX2+"{1,9}\u7ae0)(?>.+)$";
+    //private static final String NOTCHAPTERREGEX = "(?>[^(\u6b63\u6587)(\u7b2c(?>.+)[\u7ae0\u6298\u56de\u8282])]*)";
+    //private static final String VOLUMEREGEX = "^((?>[\\s\u3000]*)\u7b2c(?>[\\s\u3000]*)"+NUMREGEX1+"{1,7}(?>[\\s\u3000]*)[\u5377\u96c6\u90e8\u7bc7\u518c]"+NOTCHAPTERREGEX+")?";
+    private static final String NOTCHAPTERREGEX = "[(\u6b63\u6587)(\u7b2c.+[\u7ae0\u6298\u56de\u8282])]";
+    private static final String VOLUMEREGEX = "^((?>[\\s\u3000]*)\u7b2c(?>[\\s\u3000]*)"+NUMREGEX1+"{1,7}(?>[\\s\u3000]*)[\u5377\u96c6\u90e8\u7bc7\u518c].{0,20})?";
+    private static final String CHAPTERREGEX = "((?>[\\s\u3000]*)\u6b63\u6587(?>[\\s\u3000]*))?((?>[\\s\u3000]*)\u7b2c(?>[\\s\u3000]*)"+NUMREGEX2+"{1,9}(?>[\\s\u3000]*)[\u7ae0\u56de\u6298\u8282]).{0,30}$";
     private static final String REGEX = VOLUMEREGEX+CHAPTERREGEX;
 
     //每次读取buff，都选取buff最后SHARESTRLEN个字符添加到下次buff的开头中。
@@ -80,6 +85,8 @@ public class MyFileUtils {
     private static float pageIndxSize;
 
     private static boolean isInitPara = false;
+
+    private static int cc_count = 0;
 
     //private static List<String> smallFileList = new ArrayList<String>();
 
@@ -168,11 +175,21 @@ public class MyFileUtils {
     }
 
     public static String getChapterTitleTrim(String title){
-        return title.trim().replaceFirst("\\s*\u7b2c","\u7b2c");
+        title = title.trim();
+        int len = title.length();
+        int i = 0;
+        for(;i < len;i++){
+            if(!String.valueOf(title.charAt(i)).matches("[\\s\u3000]")){
+                break;
+            }
+        }
+        return title.substring(i,len);
+        //return title.trim().replaceFirst("\\s*\u7b2c","\u7b2c");
     }
 
     public static void getChapterNameAndIndx(String destStr,int mCharCount,int shareStrlen,StringBuffer prevStr){
-       // Log.d(TAG,"prevstr = "+prevStr);
+        //Log.d(TAG,"destStr ="+destStr);
+       //Log.d(TAG,"prevstr = "+prevStr);
         matcher = pattern.matcher(destStr);
 
         while(matcher.find()){
@@ -180,9 +197,16 @@ public class MyFileUtils {
             int end0 = matcher.end(0);
             String str0 = matcher.group(0);
             String str2 = matcher.group(2);
-            //Log.d(TAG,"str2 = "+str2+"str0 = "+str0+"prevStr ="+prevStr.toString());
+            Log.d(TAG,"str2 = "+str2+"str0 = "+str0+"prevStr ="+prevStr.toString());
+//            String str1 = matcher.group(1);
+//            String str3 = matcher.group(3);
+//            String str4 = matcher.group(4);
+//            String str5 = matcher.group(5);
+//            String str6 = matcher.group(6);
+//            Log.d(TAG,"str1="+str1 + "str3=" + str3 + " str4="+str4);
+//            Log.d(TAG,"str5 ="+str5+"str6="+str6);
             //如果有相同的章节名，保留前面的章节名。
-            if(str2.equals(prevStr.toString()) == false) {
+            if(str0.equals(prevStr.toString()) == false) {
                 //chapterList.add(str0.trim());
                 Chapter chapter = new Chapter();
                 //chapter.setName(str0.trim());
@@ -194,16 +218,16 @@ public class MyFileUtils {
                 chapter.setBeginContentIndex(beginContentIndex);
                 chapter.setCurrPageNumIndx(0);
                 BookshelfApp.getBookshelfApp().getCurrMyBook().getChapterList().add(chapter);
-                //Log.d(TAG,"chaptename = "+chapter.getName());
+                Log.d(TAG,"chaptename = "+chapter.getName());
                 //chapterIndxMap.put(str0,beginIndex);
-                //Log.d(TAG,"str0 = "+ str0 + " beginIndex = "+beginTitleIndex +" end0 = "+end0 + "str2 = "+str2);
+//                Log.d(TAG,"str0 = "+ str0 + " beginIndex = "+beginTitleIndex +" end0 = "+end0 + "str2 = "+str2);
                 //Log.d(TAG,"str0.len = "+str0.length());
             }
             else{
                 //Log.d(TAG,"prev = next str = "+prevStr);
             }
             prevStr.setLength(0);
-            prevStr.append(str2);
+            prevStr.append(str0);
         }
 
     }
@@ -216,6 +240,13 @@ public class MyFileUtils {
         if(!isInitPara) {
             initParam();
         }
+
+        Chapter c = new Chapter();
+        c.setName("序章");
+        c.setBeginCharIndex(0);
+        c.setBeginContentIndex(0);
+        c.setCurrPageNumIndx(0);
+        BookshelfApp.getBookshelfApp().getCurrMyBook().getChapterList().add(c);
 
         FileInputStream fis = null;
         BufferedReader br = null;
@@ -245,8 +276,14 @@ public class MyFileUtils {
                 Log.d(TAG,"fis!= null");
             }
             br = new BufferedReader(new InputStreamReader(fis,"gb2312"));
-
             while(br.read(buff,0,buff.length)!=-1){
+                if(cc_count == 0) {
+                    String ss =String.valueOf(buff,0,buff.length);
+                    for (int k = 0; k < 100; k++) {
+                        Log.d(TAG, "char ="+ss.charAt(k)+"hexString =" + Integer.toHexString(ss.charAt(k)));
+                    }
+                    cc_count++;
+                }
                int length = buff.length;
                 //String tmpStr = String.valueOf(buff,0,length);
                 sb2.setLength(0);
@@ -268,7 +305,7 @@ public class MyFileUtils {
                 charCount += length;
             }
             mb.setCharTotalCount(charCount);
-            //Log.d(TAG,"chartotalcount = "+charCount+"chaptercount = "+mb.getChapterList().size());
+            Log.d(TAG,"chartotalcount = "+charCount+"chaptercount = "+mb.getChapterList().size());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e){
