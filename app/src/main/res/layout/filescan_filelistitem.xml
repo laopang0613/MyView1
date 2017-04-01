@@ -4,20 +4,33 @@
     android:layout_height="80dp"
     android:descendantFocusability="blocksDescendants"
     >
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/filelistitem_cb"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        android:background="@drawable/file_checkbox_selector"
+        android:button="@null"/>
+
     <ImageView
         android:id="@+id/filelistitem_iv"
         android:layout_width="wrap_content"
         android:layout_height="72dp"
         android:src="@mipmap/filefoldericon"
-        android:layout_centerVertical="true"
-        />
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/filelistitem_cb"
+        android:layout_marginStart="11dp" />
+
     <TextView
-        android:id="@+id/filelistitem_tv"
+        android:text="TextView"
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_toEndOf="@id/filelistitem_iv"
-        android:textColor="@color/colorPrimaryDark"
-        android:textSize="20sp"
-        />
+        android:layout_toEndOf="@+id/filelistitem_iv"
+        android:id="@+id/filelistitem_tv" />
+
 </RelativeLayout>
