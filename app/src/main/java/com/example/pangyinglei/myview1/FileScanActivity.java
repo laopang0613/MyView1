@@ -183,7 +183,7 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
         for(File f:files){
             if(f.isDirectory()||f.getName().endsWith(fileSuffix)) {
                 fileList.add(f);
-                Log.d(TAG,"filename = "+ f.getName());
+                //Log.d(TAG,"filename = "+ f.getName());
             }
         }
 
@@ -270,8 +270,8 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
     //选择文件添加到书架
     private void selectDone(int position){
         File file = this.fileList.get(position);
-        Log.d(TAG,"file name = "+file.getName());
-        Log.d(TAG,"file path = "+file.getAbsolutePath());
+        //Log.d(TAG,"file name = "+file.getName());
+        //Log.d(TAG,"file path = "+file.getAbsolutePath());
         if(!isBookExist(file)) {
             MyBook mb = new MyBook();
             mb.setName(file.getName());
@@ -295,7 +295,7 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
                 } else {
                     File subfile = fileStack.pop();
                     File file = subfile.getParentFile();
-                    Log.d(TAG, "file name is " + subfile.getName()+"parentFile ="+file.getName());
+                    //Log.d(TAG, "file name is " + subfile.getName()+"parentFile ="+file.getName());
                     this.getFileList(file);
                     fileListAdapter.notifyDataSetChanged();
                 }
@@ -311,13 +311,15 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
         if(selectFiles.isEmpty()){
             return;
         }
-        for(File file:selectFiles){
+        for(File file:selectFiles) {
             realSelectFiles.add(file);
             MyBook mb = new MyBook();
             mb.setName(file.getName());
             mb.setPath(file.getAbsolutePath());
             BookshelfApp.getBookshelfApp().getBooks().add(mb);
         }
+        selectFiles.clear();
+        this.fileListAdapter.notifyDataSetChanged();
 //        for(File file:selectFiles){
 //            BookDBHelper.insertBook(file.getName(),file.getAbsolutePath());
 //        }
@@ -335,6 +337,7 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
                 cv.put("bookCurrChapterIndx", 0);
                 db.insert("bookTable", null, cv);
             }
+            realSelectFiles.clear();
             db.setTransactionSuccessful();
         }finally {
             db.endTransaction();
@@ -361,5 +364,9 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
             fileStack.clear();
         }
         fileStack = null;
+        if(!selectFiles.isEmpty()){
+            selectFiles.clear();
+        }
+        selectFiles = null;
     }
 }
