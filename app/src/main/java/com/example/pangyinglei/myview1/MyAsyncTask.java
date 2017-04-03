@@ -66,14 +66,17 @@ public class MyAsyncTask extends AsyncTask<Void,Integer,String>{
         SQLiteDatabase writeDB = bookDBHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
         writeDB.beginTransaction();
-        List<Chapter> chapterList = BookshelfApp.getBookshelfApp().getCurrMyBook().getChapterList();
-        for(Chapter chapter:chapterList){
-            BookDBHelper.insertChapter(chapter,bookId,writeDB,cv);
+        try {
+            List<Chapter> chapterList = BookshelfApp.getBookshelfApp().getCurrMyBook().getChapterList();
+            for (Chapter chapter : chapterList) {
+                BookDBHelper.insertChapter(chapter, bookId, writeDB, cv);
+            }
+            BookDBHelper.insertCharTotalCount(BookshelfApp.getBookshelfApp().getCurrMyBook().getCharTotalCount(),
+                    cv, bookId, writeDB);
+            writeDB.setTransactionSuccessful();
+        }finally {
+            writeDB.endTransaction();
         }
-        BookDBHelper.insertCharTotalCount(BookshelfApp.getBookshelfApp().getCurrMyBook().getCharTotalCount(),
-                cv,bookId,writeDB);
-        writeDB.setTransactionSuccessful();
-        writeDB.endTransaction();
         bookDBHelper.closeDB(writeDB);
     }
 
