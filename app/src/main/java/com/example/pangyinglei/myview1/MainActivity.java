@@ -324,6 +324,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Message msg = handler.obtainMessage();
             handler.sendMessage(msg);
         }
+        else{
+            ((BookshelfGridAdapter)gv.getAdapter()).notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -331,7 +334,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onStop();
         //books = null;
         Log.d(TAG,"onStop");
-        books = null;
     }
 
 }
