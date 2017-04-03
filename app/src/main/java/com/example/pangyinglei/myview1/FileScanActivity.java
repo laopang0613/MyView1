@@ -123,10 +123,12 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
                 if(isBookExist(fileList.get(position))){
                     vh.cb.setEnabled(false);
                     vh.cb.setClickable(false);
+                    vh.cb.setFocusable(false);
                 }
                 else{
                     vh.cb.setEnabled(true);
-                    vh.cb.setClickable(true);
+                    vh.cb.setClickable(false);
+                    vh.cb.setFocusable(false);
                     if(selectFiles.contains(fileList.get(position))){
                         vh.cb.setChecked(true);
                     }
