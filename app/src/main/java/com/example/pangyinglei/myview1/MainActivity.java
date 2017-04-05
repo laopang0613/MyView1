@@ -20,16 +20,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener,
+    AdapterView.OnItemLongClickListener,View.OnClickListener{
 
     private final static String TAG = "MainActivity";
 
@@ -44,6 +48,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     //private MyBook mBook;
     private GridView gv;
     private List<MyBook> books;
+
+    private boolean isDeleteMode = false;
+    private List<String> selectDeleteBooks = new ArrayList<String>();
+
+    private Button deleteBtn;
+    private Button finishBtn;
+    private Button selectallBtn;
+    private boolean isSelectAllStatus = false;
+    private static final String DELETEBOOKS = "deleteBooksFromDB";
+    private static final String READBOOKS = "readBooksFromDB";
+    private static final String BOOKKEY = "msgs";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,10 +84,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         gv.setAdapter(bAdapter);
         gv.setOnItemClickListener(this);
+        gv.setOnItemLongClickListener(this);
+        deleteBtn = (Button)findViewById(R.id.bookgrid_delete);
+        finishBtn = (Button)findViewById(R.id.bookgrid_finish);
+        selectallBtn = (Button)findViewById(R.id.bookgrid_selectall);
+        deleteBtn.setOnClickListener(this);
+        finishBtn.setOnClickListener(this);
+        selectallBtn.setOnClickListener(this);
+        deleteBtn.setVisibility(View.GONE);
+        selectallBtn.setVisibility(View.GONE);
+        finishBtn.setVisibility(View.GONE);
+
     }
 
     private void initData(){
         checkPermission();
+        selectDeleteBooks.clear();
     }
 
     //检查权限创建app的文件夹。
@@ -83,8 +110,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(currSDKVersion < 23){
             createAppFold();
             //startReadDBTask();
-            Message msg = handler.obtainMessage();
-            handler.sendMessage(msg);
+            sendDealDBMsg(READBOOKS);
         }
         else {
             int permissionCheck1 = ContextCompat.checkSelfPermission(BookshelfApp.getBookshelfApp(), Manifest.permission.READ_EXTERNAL_STORAGE);
@@ -99,8 +125,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.d(TAG, "getFileList(file)");
                 createAppFold();
                 //startReadDBTask();
-                Message msg = handler.obtainMessage();
-                handler.sendMessage(msg);
+                sendDealDBMsg(READBOOKS);
             }
         }
     }
@@ -112,7 +137,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == FILEPERMISSION) {
@@ -120,8 +144,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.d(TAG,"onRequestPermissionsResult");
                 createAppFold();
                 //startReadDBTask();
-                Message msg = handler.obtainMessage();
-                handler.sendMessage(msg);
+                sendDealDBMsg(READBOOKS);
             }
             else{
                 //如果不授权权限，则应该退出。
@@ -138,6 +161,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         AppFoldUtils.createOneFold(FOLD_DB);
     }
 
+    public String dealName(String name){
+        name = name.substring(0,name.length() - 4);
+        if(name.length() > 20){
+            return name.substring(0,20)+"...";
+        }
+        return name;
+    }
+
     private class BookshelfGridAdapter extends BaseAdapter{
 
         LayoutInflater inflater;
@@ -148,7 +179,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         @Override
         public int getCount() {
-            return books.size()+1;
+            if(isDeleteMode){
+                return books.size();
+            }
+            else {
+                return books.size() + 1;
+            }
         }
 
         @Override
@@ -169,27 +205,51 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 vh = new ViewHolder();
                 vh.iv = (ImageView)convertView.findViewById(R.id.bookiv);
                 vh.tv = (TextView)convertView.findViewById(R.id.bookname);
+                vh.cb = (CheckBox)convertView.findViewById(R.id.bookcheckbox);
+                vh.cb.setFocusable(false);
+                vh.cb.setClickable(false);
                 convertView.setTag(vh);
             }
             else{
                 vh = (ViewHolder)convertView.getTag();
             }
-            if(position == books.size())
-            {
-                vh.iv.setImageResource(R.mipmap.addbook);
-                vh.tv.setText("");
-            }
-            else {
+            if(isDeleteMode){
                 vh.iv.setImageResource(R.mipmap.bookcover);
 
                 String name = books.get(position).getName();
-                if(name == null){
-                    Log.d(TAG,"name is null");
+                if (name == null) {
+                    Log.d(TAG, "name is null");
                     vh.tv.setText("");
+                } else {
+                    Log.d(TAG, "pos = " + position + " name =" + name);
+                    vh.tv.setText(dealName(name));
+                }
+                BookshelfApp bookApp = BookshelfApp.getBookshelfApp();
+                String path = bookApp.getBooks().get(position).getPath();
+                vh.cb.setVisibility(View.VISIBLE);
+                if(selectDeleteBooks.contains(path)){
+                    vh.cb.setChecked(true);
                 }
                 else{
-                    Log.d(TAG,"pos = "+position+" name ="+name);
-                    vh.tv.setText(name);
+                    vh.cb.setChecked(false);
+                }
+            }
+            else {
+                vh.cb.setVisibility(View.GONE);
+                if (position == books.size()) {
+                    vh.iv.setImageResource(R.mipmap.addbook);
+                    vh.tv.setText("");
+                } else {
+                    vh.iv.setImageResource(R.mipmap.bookcover);
+
+                    String name = books.get(position).getName();
+                    if (name == null) {
+                        Log.d(TAG, "name is null");
+                        vh.tv.setText("");
+                    } else {
+                        Log.d(TAG, "pos = " + position + " name =" + name);
+                        vh.tv.setText(dealName(name));
+                    }
                 }
             }
 
@@ -199,19 +259,37 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         public class ViewHolder{
             public ImageView iv;
             public TextView tv;
+            public CheckBox cb;
         }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        if(position == books.size()){
-            Log.d(TAG,"add new book");
-            addNewBook();
+        if(isDeleteMode){
+            BookshelfApp bookApp = BookshelfApp.getBookshelfApp();
+            String path = bookApp.getBooks().get(position).getPath();
+            BookshelfGridAdapter.ViewHolder vh = (BookshelfGridAdapter.ViewHolder)view.getTag();
+            Log.d(TAG,"onItemClick selectDeletebooks.size="+selectDeleteBooks.size());
+            if(selectDeleteBooks.contains(path)){
+                vh.cb.setChecked(false);
+                selectDeleteBooks.remove(path);
+                Log.d(TAG,"onItemClick remove path="+path);
+            }
+            else{
+                vh.cb.setChecked(true);
+                selectDeleteBooks.add(path);
+                Log.d(TAG,"onItemClick add path="+path);
+            }
         }
-        else{
-            Log.d(TAG,"open book! position = "+position);
-            openBook(position);
+        else {
+            if (position == books.size()) {
+                Log.d(TAG, "add new book");
+                addNewBook();
+            } else {
+                Log.d(TAG, "open book! position = " + position);
+                openBook(position);
 
+            }
         }
     }
 
@@ -237,6 +315,138 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Log.d(TAG,"position = "+position);
         Intent intent = new Intent(this,ChapterContentActivity.class);
         this.startActivity(intent);
+    }
+
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        BookshelfApp bookApp = BookshelfApp.getBookshelfApp();
+        String path = bookApp.getBooks().get(position).getPath();
+        BookshelfGridAdapter.ViewHolder vh = (BookshelfGridAdapter.ViewHolder)view.getTag();
+        Log.d(TAG,"longclick path ="+path);
+        if(!isDeleteMode){
+            isDeleteMode = true;
+            selectDeleteBooks.add(path);
+            vh.cb.setChecked(true);
+            ((BookshelfGridAdapter)gv.getAdapter()).notifyDataSetChanged();
+            deleteBtn.setVisibility(View.VISIBLE);
+            finishBtn.setVisibility(View.VISIBLE);
+            selectallBtn.setVisibility(View.VISIBLE);
+        }
+        if(!selectDeleteBooks.contains(path)) {
+            selectDeleteBooks.add(path);
+            vh.cb.setChecked(true);
+        }
+        return true;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch(v.getId()){
+            case R.id.bookgrid_delete:
+                deletebooks();
+                break;
+            case R.id.bookgrid_finish:
+                exitForDelete();
+                break;
+            case R.id.bookgrid_selectall:
+                selectAll();
+                break;
+        }
+    }
+
+    private void deletebooks(){
+        if(selectDeleteBooks.isEmpty()){
+            return;
+        }
+        List<MyBook> books = BookshelfApp.getBookshelfApp().getBooks();
+//        Iterator<MyBook> iterator = books.iterator();
+//        while(iterator.hasNext()){
+//            MyBook book = iterator.next();
+//            Log.d(TAG,"book.path="+book.getPath());
+//            if(selectDeleteBooks.contains(book.getPath())){
+//                iterator.remove();
+//                Log.d(TAG,"iterator remove book.path ="+book.getPath());
+//            }
+//        }
+        for(int i= 0;i<selectDeleteBooks.size();i++){
+            Log.d(TAG,"selectbooks["+i+"]="+selectDeleteBooks.get(i));
+        }
+
+        for(Iterator<MyBook> iterator = books.iterator();iterator.hasNext();){
+            MyBook book = iterator.next();
+            Log.d(TAG,"book.path="+book.getPath());
+            if(selectDeleteBooks.contains(book.getPath())){
+                iterator.remove();
+                Log.d(TAG,"iterator remove book.path ="+book.getPath());
+            }
+        }
+        sendDealDBMsg(DELETEBOOKS);
+    }
+
+
+
+    private void deleteBooksFromDB(){
+        BookDBHelper bookDBHelper = new BookDBHelper(BookshelfApp.getBookshelfApp());
+        SQLiteDatabase readDB = bookDBHelper.getReadableDatabase();
+        SQLiteDatabase writeDB = bookDBHelper.getWritableDatabase();
+        int len = selectDeleteBooks.size();
+        writeDB.beginTransaction();
+        Cursor cursor = null;
+        try{
+            for(int i = 0;i < len;i++){
+                String path = selectDeleteBooks.get(i);
+                cursor = readDB.query("bookTable",new String[]{"bookId"},"bookPath=?",new String[]{path},null,null,null);
+                int bookId;
+                while(cursor.moveToNext()){
+                    bookId = cursor.getInt(cursor.getColumnIndex("bookId"));
+                    Log.d(TAG,"delete bookId="+bookId+"path ="+path);
+                    writeDB.delete("chapterTable","bookId=?",new String[]{String.valueOf(bookId)});
+                }
+
+                writeDB.delete("bookTable","bookPath=?",new String[]{path});
+            }
+            if(cursor != null){
+                cursor.close();
+            }
+            writeDB.setTransactionSuccessful();
+        }finally{
+            writeDB.endTransaction();
+        }
+        readDB.close();
+        writeDB.close();
+        selectDeleteBooks.clear();
+        exitForDelete();
+    }
+
+
+    private void exitForDelete(){
+        selectDeleteBooks.clear();
+        isDeleteMode = false;
+        isSelectAllStatus = false;
+        deleteBtn.setVisibility(View.GONE);
+        selectallBtn.setVisibility(View.GONE);
+        finishBtn.setVisibility(View.GONE);
+        ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
+    }
+
+    private void selectAll(){
+        if(isSelectAllStatus) {
+            selectDeleteBooks.clear();
+            ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
+            isSelectAllStatus = false;
+        }
+        else
+        {
+            List<MyBook> books = BookshelfApp.getBookshelfApp().getBooks();
+            int len = books.size();
+            for (MyBook book : books) {
+                if (!selectDeleteBooks.contains(book.getPath())) {
+                    selectDeleteBooks.add(book.getPath());
+                }
+            }
+            ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
+            isSelectAllStatus = true;
+        }
     }
 
     @Override
@@ -277,11 +487,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Log.d(TAG,"bookSize="+BookshelfApp.getBookshelfApp().getBooks().size());
     }
 
-//    cv.put("bookId",bookId);
-//    cv.put("chapterName",chapter.getName());
-//    cv.put("beginCharIndex",chapter.getBeginCharIndex());
-//    cv.put("beginContentIndex",chapter.getBeginContentIndex());
-//    cv.put("currPageNumIndx",0);
 
     private List<Chapter> getChapterList(SQLiteDatabase db,int bookId){
         List<Chapter> chapterList = new ArrayList<Chapter>();
@@ -306,11 +511,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         return chapterList;
     }
 
+    private void sendDealDBMsg(String str){
+        Message msg = handler.obtainMessage();
+        Bundle bundle = new Bundle();
+        bundle.putString(BOOKKEY,str);
+        msg.setData(bundle);
+        handler.sendMessage(msg);
+    }
+
     final Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
-            readDB();
-            ((BookshelfGridAdapter)gv.getAdapter()).notifyDataSetChanged();
+            Bundle bundle = msg.getData();
+            if(bundle.get(BOOKKEY) == READBOOKS) {
+                Log.d(TAG,"handler readBooks");
+                readDB();
+                ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
+            }
+            else if(bundle.get(BOOKKEY) == DELETEBOOKS){
+                Log.d(TAG,"handler deletebooks");
+                deleteBooksFromDB();
+            }
         }
     };
 
@@ -321,8 +542,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(books == null){
             books = BookshelfApp.getBookshelfApp().getBooks();
             //this.startReadDBTask();
-            Message msg = handler.obtainMessage();
-            handler.sendMessage(msg);
+            this.sendDealDBMsg(READBOOKS);
         }
         else{
             ((BookshelfGridAdapter)gv.getAdapter()).notifyDataSetChanged();
@@ -334,6 +554,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onStop();
         //books = null;
         Log.d(TAG,"onStop");
+        exitForDelete();
     }
 
 }
