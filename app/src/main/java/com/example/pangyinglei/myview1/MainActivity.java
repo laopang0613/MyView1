@@ -347,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case R.id.bookgrid_finish:
                 exitForDelete();
+                ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
                 break;
             case R.id.bookgrid_selectall:
                 selectAll();
@@ -416,6 +417,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         writeDB.close();
         selectDeleteBooks.clear();
         exitForDelete();
+        ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
     }
 
 
@@ -426,17 +428,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         deleteBtn.setVisibility(View.GONE);
         selectallBtn.setVisibility(View.GONE);
         finishBtn.setVisibility(View.GONE);
-        ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
     }
 
     private void selectAll(){
         if(isSelectAllStatus) {
+            selectallBtn.setText("全选");
             selectDeleteBooks.clear();
             ((BookshelfGridAdapter) gv.getAdapter()).notifyDataSetChanged();
             isSelectAllStatus = false;
         }
         else
         {
+            selectallBtn.setText("取消全选");
             List<MyBook> books = BookshelfApp.getBookshelfApp().getBooks();
             int len = books.size();
             for (MyBook book : books) {
@@ -548,6 +551,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ((BookshelfGridAdapter)gv.getAdapter()).notifyDataSetChanged();
         }
     }
+
 
     @Override
     protected void onStop() {
