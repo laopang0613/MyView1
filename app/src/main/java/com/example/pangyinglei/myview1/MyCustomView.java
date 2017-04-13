@@ -133,8 +133,10 @@ public class MyCustomView extends View {
 
 
     private PopupWindow mPopupWindow;
+//    private PopupWindow mTopPopupWindow;
 
     private GestureDetectorCompat gestureDetectorCompat;
+    //private Button bookmarkBtn;
 
     public MyCustomView(Context context) {
         this(context,null);
@@ -209,6 +211,7 @@ public class MyCustomView extends View {
         //Paint.FontMetrics fm = mPaint.getFontMetrics();
         //Log.d(TAG,"mText.length = "+mText.length());
         gestureDetectorCompat = new GestureDetectorCompat(BookshelfApp.getBookshelfApp(),new MyGestureDetector());
+
     }
 
     private void setParamInit(int width,int height){
@@ -1731,20 +1734,72 @@ public class MyCustomView extends View {
         //int imgH = ContextCompat.getDrawable(BookshelfApp.getBookshelfApp(),R.mipmap.setmenbg).getIntrinsicHeight();
         //int popWindowH = mPopupWindow.getHeight();
         LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
-        View contentView = inflater.inflate(R.layout.setting_popwindow,null);
-        int popWindowH  = contentView.getHeight();
+        View popwindowView = inflater.inflate(R.layout.setting_popwindow,null);
+        int popWindowH  = popwindowView.getHeight();
+        //int bookmarkBtnHeight = bookmarkBtn.getHeight();
+        View topPopwindowView = inflater.inflate(R.layout.chaptercontent_toppopwindow,null);
+        int topPopWindowH = topPopwindowView.getHeight();
+
         Log.d(TAG,"popWindowH = "+popWindowH);
         if(mPopupWindow!=null&&mPopupWindow.isShowing()){
+//        if(mTopPopupWindow!=null&&mTopPopupWindow.isShowing()){
             //点击坐标不在弹窗范围内, y坐标小于(屏高 - 弹窗背景高度),隐藏弹窗。
+            //if(event.getY() < screenH - popWindowH && event.getY() > topPopWindowH){
             if(event.getY() < screenH - popWindowH){
                 mPopupWindow.dismiss();
                 mPopupWindow = null;
+                Log.d(TAG,"popWindowHandler mTopPopwindow dismiss");
+//                mTopPopupWindow.dismiss();
+//                mTopPopupWindow = null;
+//                //bookmarkBtn.setVisibility(View.GONE);
             }
+            else{
+                Log.d(TAG,"popWindowHandler popwindow outside");
+            }
+
+
+
         }
         else{
+            Log.d(TAG,"popWindowHandler showpopupwindow");
             showPopWindow();
+            //bookmarkBtn.setVisibility(View.VISIBLE);
         }
     }
+
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent event) {
+//        int screenH = BookshelfApp.getBookshelfApp().getResources().getDisplayMetrics().heightPixels;
+//        Log.d(TAG,"screenH = "+screenH);
+//        //int imgH = ContextCompat.getDrawable(BookshelfApp.getBookshelfApp(),R.mipmap.setmenbg).getIntrinsicHeight();
+//        //int popWindowH = mPopupWindow.getHeight();
+//        LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
+//        View popwindowView = inflater.inflate(R.layout.setting_popwindow,null);
+//        int popWindowH  = popwindowView.getHeight();
+//        //int bookmarkBtnHeight = bookmarkBtn.getHeight();
+//        View topPopwindowView = inflater.inflate(R.layout.chaptercontent_toppopwindow,null);
+//        int topPopWindowH = topPopwindowView.getHeight();
+//
+//        Log.d(TAG,"popWindowH = "+popWindowH);
+//        if(mPopupWindow!=null&&mPopupWindow.isShowing()){
+////        if(mTopPopupWindow!=null&&mTopPopupWindow.isShowing()){
+//            //点击坐标不在弹窗范围内, y坐标小于(屏高 - 弹窗背景高度),隐藏弹窗。
+//            if(event.getY() < screenH - popWindowH && event.getY() > topPopWindowH){
+//                Log.d(TAG,"dispatchTouchEvent popwindow outside");
+//                dismissPopWindow();
+//               return true;
+//            }
+//            else{
+//                Log.d(TAG,"dispatchTouchEvent popwindow outside");
+//            }
+//        }
+//        else{
+//            Log.d(TAG,"dispatchTouchEvent showpopupwindow");
+//            //showPopWindow();
+//            //bookmarkBtn.setVisibility(View.VISIBLE);
+//        }
+//        return super.dispatchTouchEvent(event);
+//    }
 
     private void showPopWindow(){
         LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
@@ -1777,9 +1832,22 @@ public class MyCustomView extends View {
         btn3.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                gotoSetting(v);
+                addBookmark();
             }
         });
+
+//        View topPopWindowView = inflater.inflate(R.layout.chaptercontent_toppopwindow,null);
+//        mTopPopupWindow = new PopupWindow(topPopWindowView,ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT,true);
+//        mTopPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.LTGRAY));
+//        mTopPopupWindow.showAtLocation(this, Gravity.TOP,0,0);
+//        Button bookmarkBtn = (Button) topPopWindowView.findViewById(R.id.bookmarkbtn);
+//        bookmarkBtn.setOnClickListener(new View.OnClickListener(){
+//            @Override
+//            public void onClick(View v) {
+//                addBookmark();
+//                dismissPopWindow();
+//            }
+//        });
     }
 
     //跳转到目录界面。
@@ -1800,11 +1868,58 @@ public class MyCustomView extends View {
 
     }
 
+    public  void addBookmark(){
+        Log.d(TAG,"addBookmark");
+        BookMark bookMark = new BookMark();
+        Log.d(TAG,"mText = "+mText);
+        bookMark.setContent(mText);
+        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
+        bookMark.setChapterIndx(mb.getCurrChapterIndx());
+        Chapter chapter = mb.getCurrChapter();
+        int pageNumIndx = chapter.getCurrPageNumIndx();
+        bookMark.setPageNumIndx(pageNumIndx);
+        int charBeginIndx = chapter.getBeginCharIndex()+ chapter.getPageNumList().get(pageNumIndx);
+        //String percent = new DecimalFormat(".00%").format(charBeginIndx/mb.getCharTotalCount());
+        Log.d(TAG,"charTotalCount="+mb.getCharTotalCount());
+        //String percent = (float)(Math.round((charBeginIndx/mb.getCharTotalCount())*100))/100+"%";
+        double percentNum = (double)charBeginIndx/mb.getCharTotalCount();
+        float fp = new BigDecimal(percentNum).setScale(4,4).floatValue();
+        String percent = String.valueOf(fp*100);
+        //考虑3.8600001% 或者 99.000001% 保留两位小数
+        if(fp*100 >= 10 && percent.length() > 5){
+            Log.d(TAG,"1 percent="+percent);
+            percent = percent.substring(0,5)+"%";
+        }
+        else if(fp * 100 < 10 && percent.length() > 4){
+            Log.d(TAG,"2 percent="+percent);
+            percent = percent.substring(0,4) + "%";
+        }
+        else{
+            percent += "%";
+        }
+        Log.d(TAG,"pageNumIndx="+pageNumIndx+" charBeginIndx="+charBeginIndx+" percent="+percent);
+        bookMark.setPercent(percent);
+        //获取24小时制系统时间，大写HH表示24小时制，小写hh表示12小时制。
+        String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(System.currentTimeMillis());
+        bookMark.setTime(time);
+        Log.d(TAG,"time="+time);
+        mb.getBookMarkList().add(bookMark);
+        mb.setCurrBookMarkIndx(mb.getBookMarkList().size() - 1);
+        BookMark bookMarktwo = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrBookMark();
+        Log.d(TAG,"time="+bookMarktwo.getTime()+" percent="+bookMarktwo.getPercent());
+
+    }
+
     private void dismissPopWindow(){
         if(mPopupWindow!=null&&mPopupWindow.isShowing()){
             mPopupWindow.dismiss();
             mPopupWindow = null;
         }
+//        if(mTopPopupWindow!=null&&mTopPopupWindow.isShowing()){
+//            Log.d(TAG,"dismissPopWindow mTopPopwindow dismiss");
+//            mTopPopupWindow.dismiss();
+//            mTopPopupWindow = null;
+//        }
     }
 
 //    private void setScreenBrightness(int paramInt){
@@ -1830,33 +1945,5 @@ public class MyCustomView extends View {
         invalidate();
     }
 
-    private void addBookmark(){
-        Log.d(TAG,"addBookmark");
-        BookMark bookMark = new BookMark();
-        Log.d(TAG,"mText = "+mText);
-        bookMark.setContent(mText);
-        MyBook mb = BookshelfApp.getBookshelfApp().getCurrMyBook();
-        bookMark.setChapterIndx(mb.getCurrChapterIndx());
-        Chapter chapter = mb.getCurrChapter();
-        int pageNumIndx = chapter.getCurrPageNumIndx();
-        bookMark.setPageNumIndx(pageNumIndx);
-        int charBeginIndx = chapter.getBeginCharIndex()+ chapter.getPageNumList().get(pageNumIndx);
-        //String percent = new DecimalFormat(".00%").format(charBeginIndx/mb.getCharTotalCount());
-        Log.d(TAG,"charTotalCount="+mb.getCharTotalCount());
-        //String percent = (float)(Math.round((charBeginIndx/mb.getCharTotalCount())*100))/100+"%";
-        double percentNum = (double)charBeginIndx/mb.getCharTotalCount();
-        float fp = new BigDecimal(percentNum).setScale(4,4).floatValue();
-        String percent = fp*100+"%";
-        Log.d(TAG,"pageNumIndx="+pageNumIndx+" charBeginIndx="+charBeginIndx+" percent="+percent);
-        bookMark.setPercent(percent);
-        //获取24小时制系统时间，大写HH表示24小时制，小写hh表示12小时制。
-        String time = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(System.currentTimeMillis());
-        bookMark.setTime(time);
-        Log.d(TAG,"time="+time);
-        mb.getBookMarkList().add(bookMark);
-        mb.setCurrBookMarkIndx(mb.getBookMarkList().size() - 1);
-        BookMark bookMarktwo = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrBookMark();
-        Log.d(TAG,"time="+bookMarktwo.getTime()+" percent="+bookMarktwo.getPercent());
 
-    }
 }
