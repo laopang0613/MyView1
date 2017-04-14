@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -41,6 +42,8 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
     private Stack<File> fileStack = new Stack<File>();
     private Button fileScanBtn;
     private Button addToBookShelfBtn;
+    private Button selectAllBtn;
+    private boolean isSelectAllState;
 
     //checkbox选中的文件。
     private List<File> selectFiles = new ArrayList<File>();
@@ -73,8 +76,12 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
         fileStack.clear();
         addToBookShelfBtn = (Button)findViewById(R.id.file_scan_addtobookshelf);
         addToBookShelfBtn.setOnClickListener(this);
+        selectAllBtn = (Button)findViewById(R.id.filescan_selectallbtn);
+        selectAllBtn.setOnClickListener(this);
+
         selectFiles.clear();
         realSelectFiles.clear();
+        isSelectAllState = false;
     }
 
     private class FileListAdapter extends BaseAdapter{
@@ -235,6 +242,7 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
             this.getFileList(file);
            // Log.d(TAG,"filelistsize = "+fileList.size());
             selectFiles.clear();
+            isSelectAllState = false;
             fileListAdapter.notifyDataSetChanged();
         }
         else{
@@ -305,8 +313,33 @@ public class FileScanActivity extends AppCompatActivity implements AdapterView.O
             case R.id.file_scan_addtobookshelf:
                 addToBookShelf();
                 break;
+            case R.id.filescan_selectallbtn:
+                selectAllBooks();
+                break;
         }
 
+    }
+
+    private void selectAllBooks() {
+        if(isSelectAllState){
+            Log.d(TAG,"isSelectAllState == true");
+            isSelectAllState = false;
+            selectFiles.clear();
+            fileListAdapter.notifyDataSetChanged();
+        }
+        else{
+            Log.d(TAG,"isSelectAllState == false");
+            isSelectAllState = true;
+            Iterator<File> iterator = fileList.iterator();
+            while(iterator.hasNext()){
+                File file = iterator.next();
+                Log.d(TAG,"selectAllBooks file.name = "+file.getName());
+                if(!file.isDirectory()&&!isBookExist(file)&&!selectFiles.contains(file)){
+                    selectFiles.add(file);
+                }
+            }
+            fileListAdapter.notifyDataSetChanged();
+        }
     }
 
     private void addToBookShelf(){
