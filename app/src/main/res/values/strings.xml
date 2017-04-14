@@ -4,4 +4,11 @@
     <string name="phone_memory">手机存储</string>
     <string name="scan">智能扫描到0个文件</string>
     <string name="filepathback">返回上一级</string>
+    <string name="bookmark">书签</string>
+    <string name="loading">加载中。。</string>
+    <string name="str_chapter_content_settting">设置</string>
+    <string name="str_chapter_content_daylight">夜间</string>
+    <string name="str_chapter_content_chapterlist">目录</string>
+    <string name="str_chapter_content_bookmark">书签</string>
+    <string name="str_chapter_content_addbookmark">加入书签</string>
 </resources>

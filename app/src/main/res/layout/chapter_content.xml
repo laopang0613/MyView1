@@ -7,14 +7,16 @@
     android:layout_height="match_parent"
     tools:context="com.example.pangyinglei.myview1.ChapterContentActivity">
 
+
     <com.example.pangyinglei.myview1.MyCustomView
         android:id="@+id/chaptercontentview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        custom:MyTextColor="#000000"
-        custom:MyText=""
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
+        custom:MyText=""
+        custom:MyTextColor="#000000" />
+
 
     <ProgressBar
         style="?android:attr/progressBarStyle"
@@ -28,7 +30,7 @@
         />
 
     <TextView
-        android:text="加载中。。"
+        android:text="@string/loading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/textView"
@@ -36,10 +38,5 @@
         android:layout_alignStart="@+id/progressBar"
         android:layout_marginTop="11dp"
         android:visibility="gone"/>
-    <TextView
-        android:id="@+id/bottom_line"
-        android:layout_width="match_parent"
-        android:layout_height="1px"
-        android:background="@color/colorPrimaryDark"
-        android:layout_alignParentBottom="true"/>
+
 </RelativeLayout>

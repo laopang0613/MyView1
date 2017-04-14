@@ -5,7 +5,7 @@
     android:id="@+id/setting_layout"
     >
     <Button
-        android:text="目录"
+        android:text="@string/str_chapter_content_chapterlist"
         android:textColor="#000000"
         style="?android:attr/borderlessButtonStyle"
         android:layout_width="wrap_content"
@@ -17,7 +17,7 @@
         android:id="@+id/btn_chapterList" />
 
     <Button
-        android:text="夜间"
+        android:text="@string/str_chapter_content_daylight"
         android:textColor="#000000"
         style="?android:attr/borderlessButtonStyle"
         android:layout_width="wrap_content"
@@ -27,7 +27,7 @@
         android:id="@+id/btn_light" />
 
     <Button
-        android:text="设置"
+        android:text="@string/str_chapter_content_addbookmark"
         android:textColor="#000000"
         style="?android:attr/borderlessButtonStyle"
         android:layout_width="wrap_content"
@@ -36,4 +36,5 @@
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="17dp"
         android:id="@+id/btn_setting" />
+
 </RelativeLayout>

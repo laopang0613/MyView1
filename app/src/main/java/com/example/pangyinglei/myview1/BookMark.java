@@ -8,9 +8,11 @@ public class BookMark {
 
     private int chapterIndx;
     private int pageNumIndx;
+    private int charBeginIndx;
     private String content = "";
     private String percent = "";
     private String time = "";
+
 
     public BookMark() {
     }
@@ -53,5 +55,13 @@ public class BookMark {
 
     public void setTime(String time) {
         this.time = time;
+    }
+
+    public int getCharBeginIndx() {
+        return charBeginIndx;
+    }
+
+    public void setCharBeginIndx(int charBeginIndx) {
+        this.charBeginIndx = charBeginIndx;
     }
 }

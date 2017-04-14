@@ -1801,6 +1801,38 @@ public class MyCustomView extends View {
 //        return super.dispatchTouchEvent(event);
 //    }
 
+    private ValueAnimator btnAddAnimator(final View view) {
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(1.0f,2.0f,1.0f);
+        valueAnimator.setDuration(200);
+        valueAnimator.setTarget(view);
+        valueAnimator.start();
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+//                touchPointX = (float) animation.getAnimatedValue();
+//                touchPointY = MyFileUtils.getAppHeight() - 1;
+//                drawTurnNextPageAnimationDown(cacheCanvas);
+//                isTouchScroll = true;
+//                invalidate();
+                float oneScale = (float) animation.getAnimatedValue();
+                view.setScaleX(oneScale);
+                view.setScaleY(oneScale);
+                view.invalidate();
+            }
+        });
+        valueAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
+                View contentView = inflater.inflate(R.layout.setting_popwindow,null);
+                if(view.getId() == R.id.btn_chapterList){
+                    gotoChapterList(view);
+                }
+            }
+        });
+        return valueAnimator;
+    }
+
     private void showPopWindow(){
         LayoutInflater inflater = LayoutInflater.from(BookshelfApp.getBookshelfApp());
         View contentView = inflater.inflate(R.layout.setting_popwindow,null);
@@ -1808,11 +1840,10 @@ public class MyCustomView extends View {
 //        Animation animation = AnimationUtils.loadAnimation(this.getContext(),R.anim.pop_bottomtotop);
 //        LayoutAnimationController lac = new LayoutAnimationController(animation);
 //        relativeLayout.setLayoutAnimation(lac);
-        TextView bottom_line_tv = (TextView)inflater.inflate(R.layout.chapter_content,null).findViewById(R.id.bottom_line);
         mPopupWindow = new PopupWindow(contentView, ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT,true);
         //mPopupWindow.setAnimationStyle(R.style.SetPopWindow);
         //mPopupWindow.setBackgroundDrawable(ContextCompat.getDrawable(BookshelfApp.getBookshelfApp(),R.mipmap.setmenbg));
-        mPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.LTGRAY));
+        mPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.WHITE));
         mPopupWindow.showAtLocation(this, Gravity.BOTTOM,0,0);
         Button btn1 = (Button)contentView.findViewById(R.id.btn_chapterList);
         Button btn2 = (Button)contentView.findViewById(R.id.btn_light);
@@ -1820,19 +1851,22 @@ public class MyCustomView extends View {
         btn1.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                gotoChapterList(v);
+                btnAddAnimator(v);
             }
         });
         btn2.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 gotoChangeLight(v);
+                btnAddAnimator(v);
             }
         });
+
         btn3.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 addBookmark();
+                btnAddAnimator(v);
             }
         });
 
@@ -1868,6 +1902,8 @@ public class MyCustomView extends View {
 
     }
 
+
+
     public  void addBookmark(){
         Log.d(TAG,"addBookmark");
         BookMark bookMark = new BookMark();
@@ -1879,6 +1915,7 @@ public class MyCustomView extends View {
         int pageNumIndx = chapter.getCurrPageNumIndx();
         bookMark.setPageNumIndx(pageNumIndx);
         int charBeginIndx = chapter.getBeginCharIndex()+ chapter.getPageNumList().get(pageNumIndx);
+        bookMark.setCharBeginIndx(charBeginIndx);
         //String percent = new DecimalFormat(".00%").format(charBeginIndx/mb.getCharTotalCount());
         Log.d(TAG,"charTotalCount="+mb.getCharTotalCount());
         //String percent = (float)(Math.round((charBeginIndx/mb.getCharTotalCount())*100))/100+"%";
