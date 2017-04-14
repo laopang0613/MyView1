@@ -48,6 +48,7 @@ import android.widget.Button;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -1737,14 +1738,12 @@ public class MyCustomView extends View {
         View popwindowView = inflater.inflate(R.layout.setting_popwindow,null);
         int popWindowH  = popwindowView.getHeight();
         //int bookmarkBtnHeight = bookmarkBtn.getHeight();
-        View topPopwindowView = inflater.inflate(R.layout.chaptercontent_toppopwindow,null);
-        int topPopWindowH = topPopwindowView.getHeight();
 
         Log.d(TAG,"popWindowH = "+popWindowH);
         if(mPopupWindow!=null&&mPopupWindow.isShowing()){
 //        if(mTopPopupWindow!=null&&mTopPopupWindow.isShowing()){
-            //点击坐标不在弹窗范围内, y坐标小于(屏高 - 弹窗背景高度),隐藏弹窗。
             //if(event.getY() < screenH - popWindowH && event.getY() > topPopWindowH){
+            //点击坐标不在弹窗范围内, y坐标小于(屏高 - 弹窗背景高度),隐藏弹窗。
             if(event.getY() < screenH - popWindowH){
                 mPopupWindow.dismiss();
                 mPopupWindow = null;
@@ -1941,6 +1940,7 @@ public class MyCustomView extends View {
         bookMark.setTime(time);
         Log.d(TAG,"time="+time);
         mb.getBookMarkList().add(bookMark);
+        Toast.makeText(BookshelfApp.getBookshelfApp(),"书签已添加",Toast.LENGTH_SHORT).show();
         mb.setCurrBookMarkIndx(mb.getBookMarkList().size() - 1);
         BookMark bookMarktwo = BookshelfApp.getBookshelfApp().getCurrMyBook().getCurrBookMark();
         Log.d(TAG,"time="+bookMarktwo.getTime()+" percent="+bookMarktwo.getPercent());

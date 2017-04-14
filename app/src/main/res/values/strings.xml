@@ -11,4 +11,8 @@
     <string name="str_chapter_content_chapterlist">目录</string>
     <string name="str_chapter_content_bookmark">书签</string>
     <string name="str_chapter_content_addbookmark">加入书签</string>
+    <string name="str_addtobookshelf">导入书架</string>
+    <string name="str_selectall">全选</string>
+    <string name="str_deletebook">删除</string>
+    <string name="str_finish">完成</string>
 </resources>

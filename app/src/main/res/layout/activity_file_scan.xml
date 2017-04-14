@@ -30,7 +30,8 @@
             android:layout_alignParentEnd="true"
             android:layout_below="@id/file_scan_upline"
             android:text="@string/filepathback"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:textColor="@drawable/button_color_selector"/>
 
         <TextView
             android:id="@+id/file_scan_downline"
@@ -46,8 +47,9 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
-            android:text="导入书架"
-            android:textSize="15sp" />
+            android:text="@string/str_addtobookshelf"
+            android:textSize="15sp"
+            android:textColor="@drawable/button_color_selector"/>
 
         <TextView
             android:id="@+id/file_scan_bottomline"
@@ -63,5 +65,17 @@
             android:layout_above="@id/file_scan_bottomline"
             android:layout_alignParentEnd="true"
             android:layout_below="@id/file_scan_downline"
+            />
+
+        <Button
+            android:id="@+id/filescan_selectallbtn"
+            style="?android:borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="18dp"
+            android:layout_toEndOf="@+id/file_scan_pathtxt"
+            android:text="@string/str_selectall"
+            android:textColor="@drawable/button_color_selector"
             />
 </RelativeLayout>

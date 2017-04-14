@@ -14,7 +14,8 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="50dp"
-        android:text="@string/str_chapter_content_chapterlist" />
+        android:text="@string/str_chapter_content_chapterlist"
+        android:textColor="@drawable/button_color_selector"/>
 
     <Button
         android:id="@+id/bookmarkbtn"
@@ -24,7 +25,8 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
         android:layout_marginEnd="50dp"
-        android:text="@string/str_chapter_content_bookmark" />
+        android:text="@string/str_chapter_content_bookmark"
+        android:textColor="@drawable/button_color_selector"/>
 
     <TextView
         android:id="@+id/aty_cl_and_bm_topline"

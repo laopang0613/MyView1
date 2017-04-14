@@ -15,7 +15,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:text="删除"
+        android:text="@string/str_deletebook"
+        android:textColor="@drawable/button_color_selector"
         />
 
     <Button
@@ -24,7 +25,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:text="全选" />
+        android:text="@string/str_selectall"
+        android:textColor="@drawable/button_color_selector"/>
 
     <Button
         android:id="@+id/bookgrid_finish"
@@ -33,7 +35,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:text="完成" />
+        android:text="@string/str_finish"
+        android:textColor="@drawable/button_color_selector"/>
 
     <GridView
         android:id="@+id/bookgridview"
